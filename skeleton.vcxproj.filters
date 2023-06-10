@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="cube.cpp" />
+    <ClCompile Include="singlemesh.cpp" />
+    <ClCompile Include="kadardmy.cpp" />
+    <ClCompile Include="triangle.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="cube.h" />
+    <ClInclude Include="object.h" />
+    <ClInclude Include="singlemesh.h" />
+    <ClInclude Include="triangle.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Shaders">
+      <UniqueIdentifier>{ae6791bf-468a-4ec1-8ee9-3e910af1fa0f}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="banner.vert">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="banner.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="cube.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="cube.vert">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="default.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="default.vert">
+      <Filter>Shaders</Filter>
+    </None>
+  </ItemGroup>
+</Project>
