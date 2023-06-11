@@ -48,6 +48,7 @@ ObjectList objects;
 
 // shared shader programs
 ShaderProgram commonShaderProgram;
+ShaderProgram skyboxShaderProgram;
 
 GLuint texture;
 
@@ -61,6 +62,8 @@ float CAMERA_SPEED = 0.1f;
 float delayFrame;
 float lastFrame;
 
+ObjectGeometry* skyboxGeometry;
+
 glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
 glm::vec3 cameraLook = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
@@ -73,6 +76,15 @@ const float sensetivity = 0.1f;
 glm::mat4 viewMatrix = glm::mat4(1.0f);
 glm::mat4 projectionMatrix = glm::mat4(1.0f);
 
+std::string skyboxFaces[] = {
+	"data/Skybox/posx.jpg",
+	"data/Skybox/negx.jpg",
+	"data/Skybox/posy.jpg",
+	"data/Skybox/negy.jpg",
+	"data/Skybox/posz.jpg",
+	"data/Skybox/negz.jpg"
+};
+
 struct StateInfo {
 	int windowWidth;
 	int windowHeight;
@@ -82,6 +94,95 @@ struct StateInfo {
 	float sensetivity;
 
 } stateInfo;
+
+void loadDefaultShader() {
+	// initializing default shader
+	GLuint shaders[] = {
+		/*pgr::createShaderFromSource(GL_VERTEX_SHADER, vertexShaderSrc),
+		pgr::createShaderFromSource(GL_FRAGMENT_SHADER, fragmentShaderSrc),*/
+		pgr::createShaderFromFile(GL_VERTEX_SHADER, "default.vert"),
+		pgr::createShaderFromFile(GL_FRAGMENT_SHADER, "default.frag"),
+
+		0
+	};
+
+
+	commonShaderProgram.program = pgr::createProgram(shaders);
+	commonShaderProgram.locations.position = glGetAttribLocation(commonShaderProgram.program, "position");
+	commonShaderProgram.locations.texture = glGetAttribLocation(commonShaderProgram.program, "texCoord");
+
+	// other attributes and uniforms
+	commonShaderProgram.locations.PVMmatrix = glGetUniformLocation(commonShaderProgram.program, "PVM");
+	commonShaderProgram.locations.sampl = glGetUniformLocation(commonShaderProgram.program, "sampl");
+
+	assert(commonShaderProgram.locations.PVMmatrix != -1);
+	assert(commonShaderProgram.locations.position != -1);
+	// ...
+	commonShaderProgram.initialized = true;
+}
+
+void loadSkybox() {
+
+	GLuint skyboxShaders[] = {
+	  pgr::createShaderFromFile(GL_VERTEX_SHADER, "skyboxShader.vert"),
+	  pgr::createShaderFromFile(GL_FRAGMENT_SHADER, "skyboxShader.frag"),
+
+	  0
+	};
+
+	skyboxShaderProgram.program = pgr::createProgram(skyboxShaders);
+	skyboxShaderProgram.locations.position = glGetAttribLocation(skyboxShaderProgram.program, "position");
+	skyboxShaderProgram.locations.texture = glGetAttribLocation(skyboxShaderProgram.program, "texCoord");
+
+	// other attributes and uniforms
+	skyboxShaderProgram.locations.PVMmatrix = glGetUniformLocation(skyboxShaderProgram.program, "PVM");
+	skyboxShaderProgram.locations.sampl = glGetUniformLocation(skyboxShaderProgram.program, "cubeMap");
+
+	assert(skyboxShaderProgram.locations.PVMmatrix != -1);
+	assert(skyboxShaderProgram.locations.position != -1);
+
+	skyboxShaderProgram.initialized = true;
+
+	static const float screenRectangle[] = {
+		-1.0f, -1.0f,
+		1.0f, -1.0f,
+		-1.0f, 1.0f,
+		1.0f, 1.0f
+	};
+
+	glUseProgram(skyboxShaderProgram.program);
+	skyboxGeometry = new ObjectGeometry;
+
+	glGenTextures(1, &skyboxGeometry->texture);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxGeometry->texture);
+
+	glGenBuffers(1, &skyboxGeometry->vertexBufferObject);
+	glBindBuffer(GL_ARRAY_BUFFER, skyboxGeometry->vertexBufferObject);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(screenRectangle), screenRectangle, GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	glGenVertexArrays(1, &skyboxGeometry->vertexArrayObject);
+	glBindVertexArray(skyboxGeometry->vertexArrayObject);
+	glEnableVertexAttribArray(skyboxShaderProgram.locations.position);
+	glVertexAttribPointer(skyboxShaderProgram.locations.position, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+	glBindVertexArray(0);
+	glUseProgram(0);
+
+	for (int i = 0; i < 6; i++) {
+		if(!pgr::loadTexImage2D(skyboxFaces[i], GL_TEXTURE_CUBE_MAP_POSITIVE_X))
+			std::cout << "Failed loading " << skyboxFaces[i] << std::endl;
+	}
+
+	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+}
 
 /**
  * \brief Load and compile shader programs. Get attribute locations.
@@ -112,27 +213,8 @@ void loadShaderPrograms()
 		"}\n"
 		;*/
 
-	GLuint shaders[] = {
-	  /*pgr::createShaderFromSource(GL_VERTEX_SHADER, vertexShaderSrc),
-	  pgr::createShaderFromSource(GL_FRAGMENT_SHADER, fragmentShaderSrc),*/
-	  pgr::createShaderFromFile(GL_VERTEX_SHADER, "default.vert"),
-	  pgr::createShaderFromFile(GL_FRAGMENT_SHADER, "default.frag"),
-
-	  0
-	};
-
-	commonShaderProgram.program = pgr::createProgram(shaders);
-	commonShaderProgram.locations.position = glGetAttribLocation(commonShaderProgram.program, "position");
-
-	// other attributes and uniforms
-	commonShaderProgram.locations.PVMmatrix = glGetUniformLocation(commonShaderProgram.program, "PVM");
-	commonShaderProgram.locations.sampl = glGetUniformLocation(commonShaderProgram.program, "sampl");
-
-	assert(commonShaderProgram.locations.PVMmatrix != -1);
-	assert(commonShaderProgram.locations.position != -1);
-	// ...
-
-	commonShaderProgram.initialized = true;
+	loadDefaultShader();
+	loadSkybox();
 }
 
 /**
@@ -141,6 +223,18 @@ void loadShaderPrograms()
 void cleanupShaderPrograms(void) {
 
 	pgr::deleteProgramAndShaders(commonShaderProgram.program);
+	pgr::deleteProgramAndShaders(skyboxShaderProgram.program);
+}
+
+void drawSkybox() {
+	glBindVertexArray(skyboxGeometry->vertexArrayObject);
+	glUseProgram(skyboxShaderProgram.program);
+
+	//glUniformMatrix4fv(skyboxShaderProgram.locations.PVMmatrix, 1, GL_FALSE, glm::value_ptr(invPV));
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+	glBindVertexArray(0);
+	glUseProgram(0);
 }
 
 /**
@@ -153,6 +247,7 @@ void drawScene(void)
 	lastFrame = time;
 
 	CAMERA_SPEED = 2.5f * delayFrame;
+
 
 	if (ROTATION_FLAG) {
 		const float radius = 10.0f;
@@ -180,6 +275,7 @@ void drawScene(void)
 	glUniform1i(commonShaderProgram.locations.sampl, 0);
 	glActiveTexture(GL_TEXTURE0);
 
+	drawSkybox();
 }
 
 
@@ -387,8 +483,9 @@ void timerCb(int)
 void initApplication() {
 	// init OpenGL
 	// - all programs (shaders), buffers, textures, ...
-	loadShaderPrograms();
 
+	loadShaderPrograms();
+	glEnable(GL_DEPTH_TEST);
 	//glUniform1i(commonShaderProgram.locations.sampl, 0);
 
 	//objects.push_back(new Triangle(&commonShaderProgram));

@@ -42,7 +42,7 @@ typedef struct _ObjectGeometry {
 	GLuint        elementBufferObject;  ///< identifier for the element buffer object
 	GLuint        vertexArrayObject;    ///< identifier for the vertex array object
 	unsigned int  numTriangles;         ///< number of triangles in the mesh
-	GLuint        texture;
+	GLuint        texture;				///< texture id
 
 	// ...
 } ObjectGeometry;
@@ -115,5 +115,17 @@ public:
 				child->draw(viewMatrix, projectionMatrix);
 		}
 	}
+
+};
+
+class Skybox : ObjectInstance
+{
+public:
+	Skybox(ShaderProgram* shdrPrg = nullptr) {
+
+	}
+	~Skybox() {}
+
+private:
 
 };
