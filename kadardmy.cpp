@@ -236,6 +236,7 @@ void drawSkybox() {
 	glBindVertexArray(skyboxGeometry->vertexArrayObject);
 
 	glUniformMatrix4fv(skyboxShaderProgram.locations.PVMmatrix, 1, GL_FALSE, glm::value_ptr(projectionMatrix * viewMatrix * glm::mat4(1.0f)));
+	glUniform1i(skyboxShaderProgram.locations.sampl, 2);
 	//glUniformMatrix4fv(skyboxShaderProgram.locations.PVMmatrix, 1, GL_FALSE, glm::value_ptr(invPV));
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
