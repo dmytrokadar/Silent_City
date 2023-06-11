@@ -227,9 +227,15 @@ void cleanupShaderPrograms(void) {
 }
 
 void drawSkybox() {
+
+
 	glBindVertexArray(skyboxGeometry->vertexArrayObject);
 	glUseProgram(skyboxShaderProgram.program);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, skyboxGeometry->texture);
+	glBindVertexArray(skyboxGeometry->vertexArrayObject);
 
+	glUniformMatrix4fv(skyboxShaderProgram.locations.PVMmatrix, 1, GL_FALSE, glm::value_ptr(projectionMatrix * viewMatrix * glm::mat4(1.0f)));
 	//glUniformMatrix4fv(skyboxShaderProgram.locations.PVMmatrix, 1, GL_FALSE, glm::value_ptr(invPV));
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
