@@ -153,35 +153,35 @@ void loadSkybox() {
 	glUseProgram(skyboxShaderProgram.program);
 	skyboxGeometry = new ObjectGeometry;
 
-	glGenTextures(1, &skyboxGeometry->texture);
 	glActiveTexture(GL_TEXTURE2);
+	glGenTextures(1, &skyboxGeometry->texture);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxGeometry->texture);
 
 	glGenBuffers(1, &skyboxGeometry->vertexBufferObject);
 	glBindBuffer(GL_ARRAY_BUFFER, skyboxGeometry->vertexBufferObject);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(screenRectangle), screenRectangle, GL_DYNAMIC_DRAW);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	glGenVertexArrays(1, &skyboxGeometry->vertexArrayObject);
 	glBindVertexArray(skyboxGeometry->vertexArrayObject);
 	glEnableVertexAttribArray(skyboxShaderProgram.locations.position);
 	glVertexAttribPointer(skyboxShaderProgram.locations.position, 2, GL_FLOAT, GL_FALSE, 0, 0);
 
-	glBindVertexArray(0);
-	glUseProgram(0);
-
 	for (int i = 0; i < 6; i++) {
 		if(!pgr::loadTexImage2D(skyboxFaces[i], GL_TEXTURE_CUBE_MAP_POSITIVE_X+i))
 			std::cout << "Failed loading " << skyboxFaces[i] << std::endl;
 	}
 
- 	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 	glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+	
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+	glUseProgram(0);
 }
 
 /**
@@ -235,7 +235,7 @@ void drawSkybox() {
 	glBindTexture(GL_TEXTURE_2D, skyboxGeometry->texture);
 	glBindVertexArray(skyboxGeometry->vertexArrayObject);
 
-	glUniformMatrix4fv(skyboxShaderProgram.locations.PVMmatrix, 1, GL_FALSE, glm::value_ptr(projectionMatrix * viewMatrix * glm::mat4(1.0f)));
+	glUniformMatrix4fv(skyboxShaderProgram.locations.PVMmatrix, 1, GL_FALSE, glm::value_ptr(glm::inverse(projectionMatrix * viewMatrix * glm::mat4(1.0f))));
 	glUniform1i(skyboxShaderProgram.locations.sampl, 2);
 	//glUniformMatrix4fv(skyboxShaderProgram.locations.PVMmatrix, 1, GL_FALSE, glm::value_ptr(invPV));
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
