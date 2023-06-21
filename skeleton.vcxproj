@@ -73,6 +73,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);D:\PGR\kostra_semestral\Linking</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -152,12 +153,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Barrel.cpp" />
+    <ClCompile Include="CharactersDraw.cpp" />
     <ClCompile Include="cube.cpp" />
     <ClCompile Include="singlemesh.cpp" />
     <ClCompile Include="kadardmy.cpp" />
     <ClCompile Include="triangle.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Barrel.h" />
+    <ClInclude Include="CharactersDraw.h" />
     <ClInclude Include="cube.h" />
     <ClInclude Include="object.h" />
     <ClInclude Include="singlemesh.h" />
@@ -170,10 +175,22 @@
     <None Include="cube.vert" />
     <None Include="default.frag" />
     <None Include="default.vert" />
+    <None Include="packages.config" />
+    <None Include="perPixel.frag" />
+    <None Include="perPixel.vert" />
     <None Include="skyboxShader.frag" />
     <None Include="skyboxShader.vert" />
+    <None Include="text.frag" />
+    <None Include="text.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
+    <Import Project="packages\freetype2.2.6.0.1\build\native\freetype2.targets" Condition="Exists('packages\freetype2.2.6.0.1\build\native\freetype2.targets')" />
   </ImportGroup>
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('packages\freetype2.2.6.0.1\build\native\freetype2.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\freetype2.2.6.0.1\build\native\freetype2.targets'))" />
+  </Target>
 </Project>

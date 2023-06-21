@@ -37,37 +37,57 @@
 #include "object.h"
 #include "triangle.h"
 #include "cube.h"
+#include "Barrel.h"
+#include "CharactersDraw.h"
 #include "singlemesh.h"
+//#include <AntTweakBar.h>
+#include <ft2build.h>
+#include FT_FREETYPE_H 
 
 
 constexpr int WINDOW_WIDTH = 500;
 constexpr int WINDOW_HEIGHT = 500;
 constexpr char WINDOW_TITLE[] = "PGR: Application Skeleton";
 
+// objects
 ObjectList objects;
+Sun * sun;
+
+// utilities
+CharactersDraw* characterDraw;
 
 // shared shader programs
 ShaderProgram commonShaderProgram;
+ShaderProgram bannerShaderProgram;
 ShaderProgram skyboxShaderProgram;
+ShaderProgram sunShaderProgram;
+ShaderProgram textShaderProgram;
 
 GLuint texture;
+GLuint bloodTexture;
 
 
 // -----------------------  OpenGL stuff ---------------------------------
 bool keys[256];
 
 bool ROTATION_FLAG = true;
+bool SUN_MOTION_FLAG = true;
+bool OVERALAY_FLAG = false;
 float CAMERA_SPEED = 0.1f;
 
 float delayFrame;
 float lastFrame;
 
 ObjectGeometry* skyboxGeometry;
+ObjectGeometry* bloodGeometry;
 
+glm::vec3 cameraPosGlobal = glm::vec3(0.0f, 0.0f, 3.0f);
 glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
 glm::vec3 cameraLook = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 glm::vec3 direction;
+
+glm::vec3 sunPos = glm::vec3(4.0f, 5.0f, 0.0f);
 
 float pitch = 0, yaw = -90.0f;
 float lastMouseX = WINDOW_WIDTH / 2, lastMouseY = WINDOW_HEIGHT / 2;
@@ -75,6 +95,8 @@ const float sensetivity = 0.1f;
 
 glm::mat4 viewMatrix = glm::mat4(1.0f);
 glm::mat4 projectionMatrix = glm::mat4(1.0f);
+
+//TwBar* menuBar;
 
 std::string skyboxFaces[] = {
 	"data/Skybox/posx.jpg",
@@ -100,8 +122,8 @@ void loadDefaultShader() {
 	GLuint shaders[] = {
 		/*pgr::createShaderFromSource(GL_VERTEX_SHADER, vertexShaderSrc),
 		pgr::createShaderFromSource(GL_FRAGMENT_SHADER, fragmentShaderSrc),*/
-		pgr::createShaderFromFile(GL_VERTEX_SHADER, "default.vert"),
-		pgr::createShaderFromFile(GL_FRAGMENT_SHADER, "default.frag"),
+		pgr::createShaderFromFile(GL_VERTEX_SHADER, "perPixel.vert"),
+		pgr::createShaderFromFile(GL_FRAGMENT_SHADER, "perPixel.frag"),
 
 		0
 	};
@@ -109,16 +131,139 @@ void loadDefaultShader() {
 
 	commonShaderProgram.program = pgr::createProgram(shaders);
 	commonShaderProgram.locations.position = glGetAttribLocation(commonShaderProgram.program, "position");
+	commonShaderProgram.locations.normals = glGetAttribLocation(commonShaderProgram.program, "normals");
 	commonShaderProgram.locations.texture = glGetAttribLocation(commonShaderProgram.program, "texCoord");
 
 	// other attributes and uniforms
 	commonShaderProgram.locations.PVMmatrix = glGetUniformLocation(commonShaderProgram.program, "PVM");
+	commonShaderProgram.locations.model = glGetUniformLocation(commonShaderProgram.program, "model");
 	commonShaderProgram.locations.sampl = glGetUniformLocation(commonShaderProgram.program, "sampl");
+	commonShaderProgram.locations.light = glGetUniformLocation(commonShaderProgram.program, "light");
+	commonShaderProgram.locations.lightPos = glGetUniformLocation(commonShaderProgram.program, "lightPos");
+	commonShaderProgram.locations.cameraPos = glGetUniformLocation(commonShaderProgram.program, "cameraPos");
 
 	assert(commonShaderProgram.locations.PVMmatrix != -1);
 	assert(commonShaderProgram.locations.position != -1);
 	// ...
 	commonShaderProgram.initialized = true;
+}
+
+void loadTextShader() {
+	// initializing default shader
+	GLuint shaders[] = {
+		/*pgr::createShaderFromSource(GL_VERTEX_SHADER, vertexShaderSrc),
+		pgr::createShaderFromSource(GL_FRAGMENT_SHADER, fragmentShaderSrc),*/
+		pgr::createShaderFromFile(GL_VERTEX_SHADER, "text.vert"),
+		pgr::createShaderFromFile(GL_FRAGMENT_SHADER, "text.frag"),
+
+		0
+	};
+
+
+	textShaderProgram.program = pgr::createProgram(shaders);
+	textShaderProgram.locations.position = glGetAttribLocation(textShaderProgram.program, "position");
+	textShaderProgram.locations.texture = glGetAttribLocation(textShaderProgram.program, "texCoord");
+
+	// other attributes and uniforms
+	textShaderProgram.locations.projection = glGetUniformLocation(textShaderProgram.program, "projection");
+	textShaderProgram.locations.sampl = glGetUniformLocation(textShaderProgram.program, "sampl");
+	textShaderProgram.locations.textColor = glGetUniformLocation(textShaderProgram.program, "textColor");
+
+	assert(textShaderProgram.locations.projection != -1);
+	assert(textShaderProgram.locations.position != -1);
+	// ...
+	textShaderProgram.initialized = true;
+}
+
+void loadBannerShader() {
+	// initializing default shader
+	GLuint shaders[] = {
+		/*pgr::createShaderFromSource(GL_VERTEX_SHADER, vertexShaderSrc),
+		pgr::createShaderFromSource(GL_FRAGMENT_SHADER, fragmentShaderSrc),*/
+		pgr::createShaderFromFile(GL_VERTEX_SHADER, "banner.vert"),
+		pgr::createShaderFromFile(GL_FRAGMENT_SHADER, "banner.frag"),
+
+		0
+	};
+
+	static const float screenRectangle[] = {
+		-1.0f,  0.15f, 0.0f, 0.0f, 1.0f,
+		  -1.0f, -0.15f, 0.0f, 0.0f, 0.0f,
+		   1.0f,  0.15f, 0.0f, 3.0f, 1.0f,
+		   1.0f, -0.15f, 0.0f, 3.0f, 0.0f
+	};
+
+	bannerShaderProgram.program = pgr::createProgram(shaders);
+	bannerShaderProgram.locations.position = glGetAttribLocation(bannerShaderProgram.program, "position");
+	bannerShaderProgram.locations.normals = glGetAttribLocation(bannerShaderProgram.program, "normals");
+	bannerShaderProgram.locations.texture = glGetAttribLocation(bannerShaderProgram.program, "texCoord");
+
+	// other attributes and uniforms
+	bannerShaderProgram.locations.PVMmatrix = glGetUniformLocation(bannerShaderProgram.program, "PVM");
+	bannerShaderProgram.locations.model = glGetUniformLocation(bannerShaderProgram.program, "model");
+	bannerShaderProgram.locations.sampl = glGetUniformLocation(bannerShaderProgram.program, "texSampler");
+	bannerShaderProgram.locations.light = glGetUniformLocation(bannerShaderProgram.program, "light");
+	bannerShaderProgram.locations.lightPos = glGetUniformLocation(bannerShaderProgram.program, "lightPos");
+	bannerShaderProgram.locations.cameraPos = glGetUniformLocation(bannerShaderProgram.program, "cameraPos");
+
+	assert(bannerShaderProgram.locations.PVMmatrix != -1);
+	assert(bannerShaderProgram.locations.position != -1);
+	// ...
+	bannerShaderProgram.initialized = true;
+
+	// texture setup
+	glActiveTexture(GL_TEXTURE3);
+	bloodTexture = pgr::createTexture("data/PainHud.png");
+	if (bloodTexture == 0) {
+		std::cout << "Texture not loaded!" << std::endl;
+	}
+	CHECK_GL_ERROR();
+	glBindTexture(GL_TEXTURE_2D, bloodTexture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+
+	glGenTextures(1, &bloodGeometry->texture);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, bloodGeometry->texture);
+
+	// buffers 
+	glGenBuffers(1, &bloodGeometry->vertexBufferObject);
+	glBindBuffer(GL_ARRAY_BUFFER, bloodGeometry->vertexBufferObject);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(screenRectangle), screenRectangle, GL_DYNAMIC_DRAW);
+
+	glGenVertexArrays(1, &bloodGeometry->vertexArrayObject);
+	glBindVertexArray(bloodGeometry->vertexArrayObject);
+	glEnableVertexAttribArray(bannerShaderProgram.locations.position);
+	glVertexAttribPointer(bannerShaderProgram.locations.position, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+	glUseProgram(0);
+	CHECK_GL_ERROR();
+}
+
+void loadSunShader() {
+	// initializing default shader
+	GLuint shaders[] = {
+		/*pgr::createShaderFromSource(GL_VERTEX_SHADER, vertexShaderSrc),
+		pgr::createShaderFromSource(GL_FRAGMENT_SHADER, fragmentShaderSrc),*/
+		pgr::createShaderFromFile(GL_VERTEX_SHADER, "cube.vert"),
+		pgr::createShaderFromFile(GL_FRAGMENT_SHADER, "cube.frag"),
+
+		0
+	};
+
+
+	sunShaderProgram.program = pgr::createProgram(shaders);
+	sunShaderProgram.locations.position = glGetAttribLocation(sunShaderProgram.program, "position");
+	sunShaderProgram.locations.normals = glGetAttribLocation(sunShaderProgram.program, "normals");
+	sunShaderProgram.locations.texture = glGetAttribLocation(sunShaderProgram.program, "texCoord");
+
+	// other attributes and uniforms
+	sunShaderProgram.locations.PVMmatrix = glGetUniformLocation(sunShaderProgram.program, "PVM");
+
+	assert(sunShaderProgram.locations.PVMmatrix != -1);
+	assert(sunShaderProgram.locations.position != -1);
+	// ...
+	sunShaderProgram.initialized = true;
 }
 
 void loadSkybox() {
@@ -214,7 +359,10 @@ void loadShaderPrograms()
 		;*/
 
 	loadDefaultShader();
+	loadTextShader();
 	loadSkybox();
+	loadSunShader();
+	//loadBannerShader();
 }
 
 /**
@@ -224,6 +372,7 @@ void cleanupShaderPrograms(void) {
 
 	pgr::deleteProgramAndShaders(commonShaderProgram.program);
 	pgr::deleteProgramAndShaders(skyboxShaderProgram.program);
+	pgr::deleteProgramAndShaders(sunShaderProgram.program);
 }
 
 void drawSkybox() {
@@ -232,11 +381,28 @@ void drawSkybox() {
 	glBindVertexArray(skyboxGeometry->vertexArrayObject);
 	glUseProgram(skyboxShaderProgram.program);
 	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, skyboxGeometry->texture);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxGeometry->texture);
 	glBindVertexArray(skyboxGeometry->vertexArrayObject);
 
 	glUniformMatrix4fv(skyboxShaderProgram.locations.PVMmatrix, 1, GL_FALSE, glm::value_ptr(glm::inverse(projectionMatrix * viewMatrix * glm::mat4(1.0f))));
 	glUniform1i(skyboxShaderProgram.locations.sampl, 2);
+	//glUniformMatrix4fv(skyboxShaderProgram.locations.PVMmatrix, 1, GL_FALSE, glm::value_ptr(invPV));
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+	glBindVertexArray(0);
+	glUseProgram(0);
+}
+
+void drawBanner() {
+	glBindVertexArray(bloodGeometry->vertexArrayObject);
+	glUseProgram(bannerShaderProgram.program);
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, bloodGeometry->texture);
+	glBindVertexArray(bloodGeometry->vertexArrayObject);
+	CHECK_GL_ERROR();
+
+	glUniformMatrix4fv(bannerShaderProgram.locations.PVMmatrix, 1, GL_FALSE, glm::value_ptr(glm::inverse(projectionMatrix * viewMatrix * glm::mat4(1.0f))));
+	glUniform1i(bannerShaderProgram.locations.sampl, 2);
 	//glUniformMatrix4fv(skyboxShaderProgram.locations.PVMmatrix, 1, GL_FALSE, glm::value_ptr(invPV));
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
@@ -254,15 +420,26 @@ void drawScene(void)
 	lastFrame = time;
 
 	CAMERA_SPEED = 2.5f * delayFrame;
+	const float radius = 10.0f;
+
+	if (SUN_MOTION_FLAG) {
+		float sunX = sin(time) * radius;
+		float sunY = cos(time) * radius;
+
+		sunPos.x = sunX;
+		sunPos.y = sunY;
+
+		sun->changePosition(sunPos);
+	}
 
 
 	if (ROTATION_FLAG) {
-		const float radius = 10.0f;
 		float camX = sin(time) * radius;
 		float camZ = cos(time) * radius;
 
 		//std::cout << glutGet(GLUT_ELAPSED_TIME) << std::endl;
 
+		cameraPosGlobal = glm::vec3(camX / 2, 3.0, camZ / 2);
 		viewMatrix = glm::lookAt(glm::vec3(camX / 2, 3.0, camZ / 2), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
 	}
 	else {
@@ -272,17 +449,21 @@ void drawScene(void)
 		cameraLook = glm::normalize(direction);
 
 		viewMatrix = glm::lookAt(cameraPos, cameraPos + cameraLook, cameraUp);
+		cameraPosGlobal = cameraPos;
 	}
 	projectionMatrix = glm::perspective(glm::radians(60.0f), float(glutGet(GLUT_WINDOW_WIDTH)) / float(glutGet(GLUT_WINDOW_HEIGHT)), 0.1f, 100.0f);
 	for (ObjectInstance* object : objects) {   // for (auto object : objects) {
 		if (object != nullptr)
-			object->draw(viewMatrix, projectionMatrix);
+			object->draw(viewMatrix, projectionMatrix, glm::vec3(1.0f, 1.0f, 1.0f), sunPos, cameraPosGlobal);
 	}
+	sun->draw(viewMatrix, projectionMatrix);
 
 	glUniform1i(commonShaderProgram.locations.sampl, 0);
 	glActiveTexture(GL_TEXTURE0);
 
 	drawSkybox();
+	characterDraw->draw("test Text", 25.0f, 25.0f, 1.0f, glm::vec3(1.0f));
+	//drawBanner();
 }
 
 
@@ -294,10 +475,13 @@ void drawScene(void)
 void displayCb() {
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	// draw the window contents (scene objects)
 	drawScene();
 
+	//TwDraw();
+	glDisable(GL_BLEND);
 	glutSwapBuffers();
 }
 
@@ -337,6 +521,10 @@ void keyboardCb(unsigned char keyPressed, int mouseX, int mouseY) {
 		case 'c'://c
 			std::cout << "C pressed" << std::endl;
 			ROTATION_FLAG = !ROTATION_FLAG;
+			break;
+		case 'l':
+			std::cout << "Sun stopped" << std::endl;
+			SUN_MOTION_FLAG = !SUN_MOTION_FLAG;
 			break;
 		default:
 			break;
@@ -497,10 +685,19 @@ void initApplication() {
 
 	//objects.push_back(new Triangle(&commonShaderProgram));
 	objects.push_back(new Cube(&commonShaderProgram));
+	/*objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, 2.5f, 0.0f)));
+	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, 2.5f, 2.5f)));
+	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, 2.5f, -2.5f)));
+	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(-2.5f, 0.0f, 0.0f)));
+	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(-2.5f, -2.5f, 0.0f)));
+	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, -2.5f, 0.0f)));*/
+	sun = new Sun(&sunShaderProgram, sunPos);
 	// objects.push_back(new SingleMesh(&commonShaderProgram));
+	//(objects[0])->loadObjFromFile("data/cubeTriangulated.obj");
 
 	// init your Application
 	// - setup the initial application state
+	characterDraw = new CharactersDraw(&textShaderProgram);
 }
 
 /**
@@ -540,6 +737,12 @@ int main(int argc, char** argv) {
 		glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
 		glutCreateWindow(WINDOW_TITLE);
 
+		/*TwInit(TW_OPENGL, NULL);
+		TwWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);*/
+		//menuBar = TwNewBar("Menu");
+		//TwDefine("Menu size='240 420' color='20 20 20' fontsize=3");
+
+		//CHECK_GL_ERROR();
 		// callbacks - use only those you need
 		glutDisplayFunc(displayCb);
 		glutReshapeFunc(reshapeCb);
@@ -551,7 +754,6 @@ int main(int argc, char** argv) {
 		 glutMotionFunc(mouseMotionCb);
 		 glutPassiveMotionFunc(passiveMouseMotionCb);
 		 glutIgnoreKeyRepeat(true);
-
 		 //texture = pgr::createTexture(TEST_Texture);
 		 
 

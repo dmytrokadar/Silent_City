@@ -1,19 +1,25 @@
 #include <iostream>
 #include "cube.h"
 
-const char* TEST_Texture = "data/texture_test.jpg";
+const char* TEST_Texture = "data/cubeTexture.png";
 
 void Cube::update(float elapsedTime, const glm::mat4* parentModelMatrix) {
 	
 	ObjectInstance::update(elapsedTime, parentModelMatrix);
 }
 
-void Cube::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix)
+void Cube::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix, const glm::vec3 light, const glm::vec3 lightPos, const glm::vec3 cameraPos)
 {
 	if (initialized && (shaderProgram != nullptr)) {
 		glUseProgram(shaderProgram->program);
 
-		glUniformMatrix4fv(shaderProgram->locations.PVMmatrix, 1, GL_FALSE, glm::value_ptr(projectionMatrix * viewMatrix * globalModelMatrix));
+		glm::mat4 model = glm::translate(globalModelMatrix, position);
+		glUniformMatrix4fv(shaderProgram->locations.PVMmatrix, 1, GL_FALSE, glm::value_ptr(projectionMatrix * viewMatrix * model));
+
+		glUniformMatrix4fv(shaderProgram->locations.model, 1, GL_FALSE, glm::value_ptr(model));
+		glUniform3f(shaderProgram->locations.light, light.x, light.y, light.z);
+		glUniform3f(shaderProgram->locations.lightPos, lightPos.x, lightPos.y, lightPos.z);
+		glUniform3f(shaderProgram->locations.cameraPos, cameraPos.x, cameraPos.y, cameraPos.z);
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, geometry->texture);
@@ -26,9 +32,11 @@ void Cube::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix)
 	}
 }
 
-Cube::Cube(ShaderProgram* shdrPrg) : ObjectInstance(shdrPrg), initialized(false)
+Cube::Cube(ShaderProgram* shdrPrg, const glm::vec3 pos, std::string objName) : ObjectInstance(shdrPrg), initialized(false)
 {
 	geometry = new ObjectGeometry;
+
+	position = pos;
 
 	static constexpr float vertices[] = {
 		//Position
@@ -179,12 +187,15 @@ Cube::Cube(ShaderProgram* shdrPrg) : ObjectInstance(shdrPrg), initialized(false)
 		   0.0f, 1.0f,
 	};
 
-	geometry->texture = pgr::createTexture("data/texture_test_small.jpg");
+	loadObjFromFile(objName);
+
+	geometry->texture = pgr::createTexture(TEST_Texture);
 	if (geometry->texture == 0) {
 		std::cout << "Texture not loaded!" << std::endl;
 	}
 
-	geometry->numTriangles = 12;
+	//geometry->numTriangles = geometry->vertices.size();
+	std::cout << geometry->numTriangles << std::endl;
 	geometry->elementBufferObject = 0;
 
 	glGenVertexArrays(1, &geometry->vertexArrayObject);
@@ -192,16 +203,22 @@ Cube::Cube(ShaderProgram* shdrPrg) : ObjectInstance(shdrPrg), initialized(false)
 
 	glGenBuffers(1, &geometry->vertexBufferObject);
 	glBindBuffer(GL_ARRAY_BUFFER, geometry->vertexBufferObject);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+	//&(geometry->vertices[0])
+	glBufferData(GL_ARRAY_BUFFER, geometry->vertices.size() * sizeof(float), &(geometry->vertices[0]), GL_STATIC_DRAW);
 
 	if ((shaderProgram != nullptr) && shaderProgram->initialized && (shaderProgram->locations.position != -1) && (shaderProgram->locations.PVMmatrix != -1)) {
 		glEnableVertexAttribArray(shaderProgram->locations.position);
 		glVertexAttribPointer(shaderProgram->locations.position, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+		
+		glEnableVertexAttribArray(shaderProgram->locations.normals);
+		glVertexAttribPointer(shaderProgram->locations.normals, 3, GL_FLOAT, GL_FALSE, 0, (void*)(geometry->numTriangles * 3 * 3 * sizeof(float)));
 
 		glEnableVertexAttribArray(shaderProgram->locations.texture);
-		glVertexAttribPointer(shaderProgram->locations.texture, 2, GL_FLOAT, GL_FALSE, 0, (void*)(12*3*3*2*sizeof(float)));
+		glVertexAttribPointer(shaderProgram->locations.texture, 2, GL_FLOAT, GL_FALSE, 0, (void*)(geometry->numTriangles *3*3*2*sizeof(float)));
 
 		glBindTexture(GL_TEXTURE_2D, geometry->texture);
+		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
 		initialized = true;
 	}
 	else {

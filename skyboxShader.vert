@@ -12,5 +12,7 @@ void main() {
 	gl_Position = vec4(position, 0.9999f, 1.0f);
 	vec4 worldCoord = PVM * gl_Position;
 
+	worldCoord.y = -worldCoord.y;
+
 	texCoord_v = worldCoord.xyz / worldCoord.w;
 }

@@ -1,6 +1,9 @@
 #pragma once
 
 #include "pgr.h"
+#include <fstream>
+#include <sstream>
+#include <iomanip>  
 
 /**
  * \brief Shader program related stuff (id, locations, ...).
@@ -22,7 +25,13 @@ typedef struct _ShaderProgram {
 		GLint color;
 		// uniforms locations
 		GLint PVMmatrix;
+		GLint model;
+		GLint projection;
 		GLint sampl;
+		GLint light;
+		GLint textColor;
+		GLint lightPos;
+		GLint cameraPos;
 	} locations;
 
 	// ...
@@ -43,6 +52,7 @@ typedef struct _ObjectGeometry {
 	GLuint        vertexArrayObject;    ///< identifier for the vertex array object
 	unsigned int  numTriangles;         ///< number of triangles in the mesh
 	GLuint        texture;				///< texture id
+	std::vector<float> vertices;
 
 	// ...
 } ObjectGeometry;
@@ -114,6 +124,158 @@ public:
 			if (child != nullptr)
 				child->draw(viewMatrix, projectionMatrix);
 		}
+	}
+
+	virtual void draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix, const glm::vec3 light, const glm::vec3 lightPos, const glm::vec3 cameraPos) {
+		// draw instance geometry using globalModelMatrix
+		// ...
+
+		// process all children
+		for (ObjectInstance* child : children) {   //for (auto child : children) {
+			if (child != nullptr)
+				child->draw(viewMatrix, projectionMatrix, light, lightPos, cameraPos);
+		}
+	}
+
+	virtual void loadObjFromFileAssimp(std::string path) {
+		Assimp::Importer importer;
+
+		importer.SetPropertyInteger(AI_CONFIG_PP_PTV_NORMALIZE, 1);
+		const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_JoinIdenticalVertices | aiProcess_TransformUVCoords | 0);
+
+
+	}
+
+	virtual void loadObjFromFile(std::string path) {
+		std::ifstream readObj(path);
+		std::string str, lineFirstWord, lineNumbers;
+
+		std::string vertexSign = "v";
+		std::string textureSign = "vt";
+		std::string normalSign = "vn";
+		std::string faceSign = "f";
+
+		std::vector<glm::vec3> vertexesSoup;
+		std::vector<glm::vec2> texturesSoup;
+		std::vector<glm::vec3> normalsSoup;
+		
+		std::vector<glm::vec3> vertexes;
+		std::vector<glm::vec2> textures;
+		std::vector<glm::vec3> normals;
+
+		int facesNum = 0;
+
+		if (readObj.fail()) {
+			std::cout << "Can't open file " << path << std::endl;
+			return;
+		}
+
+		// reading file, extracting values
+		while (getline(readObj, str))
+		{
+			std::istringstream numbers(str);
+
+			//lineFirstWord = str.substr(0, str.find(" "));
+			numbers >> lineFirstWord;
+
+			if (lineFirstWord == vertexSign) {
+				glm::vec3 vert;
+				numbers >> vert.x >> vert.y >> vert.z;
+				vertexesSoup.push_back(vert);
+			}
+			if (lineFirstWord == textureSign) {
+				glm::vec2 texture;
+				numbers >> texture.x >> texture.y;
+				texturesSoup.push_back(texture);
+			}
+			if (lineFirstWord == normalSign) {
+				glm::vec3 normal;
+				numbers >> normal.x >> normal.y >> normal.z;
+				normalsSoup.push_back(normal);
+			}
+			if (lineFirstWord == faceSign) {
+				std::vector<int> faceVertexes;
+				std::vector<int> faceTextures;
+				std::vector<int> faceNormals;
+
+				facesNum++;
+				
+				while (!numbers.eof()) {
+					std::string v1;
+					int v, t, n;
+					char trash;
+
+					numbers >> v1;
+
+					std::stringstream ss(v1);
+
+					ss >> v >> trash >> t >> trash >> n;
+
+					//std::cout << v << " " << t << " " << n << std::endl;
+					vertexes.push_back(vertexesSoup[v - 1]);
+					textures.push_back(texturesSoup[t - 1]);
+					normals.push_back(normalsSoup[n - 1]);
+				}
+			}
+		}
+		
+		// printing coordinates to check if it was parsed
+		//int count = 0;
+		//for (glm::vec3 vert : vertexes) {
+		//	std::cout << vert.x << " " << vert.y << " " << vert.z << std::endl;
+		//	count++;
+		//	if (count == 3) {
+		//		count = 0;
+		//		std::cout << std::endl;
+		//	}
+		//}
+
+		//count = 0;
+		//for (glm::vec2 vert : textures) {
+		//	std::cout << vert.x << " " << vert.y << " " << std::endl;
+		//	count++;
+		//	if (count == 3) {
+		//		count = 0;
+		//		std::cout << std::endl;
+		//	}
+		//}
+
+		//count = 0;
+		//for (glm::vec3 vert : vertexes) {
+		//	std::cout << vert.x << " " << vert.y << " " << vert.z << std::endl;
+		//	count++;
+		//	if (count == 3) {
+		//		count = 0;
+		//		std::cout << std::endl;
+		//	}
+		//}
+
+		readObj.close();
+
+		// adding values to object matrix
+		for (glm::vec3 vert : vertexes) {
+			geometry->vertices.push_back(vert.x);
+			geometry->vertices.push_back(vert.y);
+			geometry->vertices.push_back(vert.z);
+		}
+		/*for (float num : geometry->vertices) {
+			std::cout << num << std::endl;
+		}*/
+		for (glm::vec3 normal : normals) {
+			geometry->vertices.push_back(normal.x);
+			geometry->vertices.push_back(normal.y);
+			geometry->vertices.push_back(normal.z);
+		}
+		/*for (float num : geometry->vertices) {
+			std::cout << num << std::endl;
+		}*/
+		for (glm::vec2 tex : textures) {
+			geometry->vertices.push_back(tex.x);
+			geometry->vertices.push_back(tex.y);
+		}
+
+
+		geometry->numTriangles = facesNum;
 	}
 
 };

@@ -5,12 +5,16 @@
     <ClCompile Include="singlemesh.cpp" />
     <ClCompile Include="kadardmy.cpp" />
     <ClCompile Include="triangle.cpp" />
+    <ClCompile Include="Barrel.cpp" />
+    <ClCompile Include="CharactersDraw.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cube.h" />
     <ClInclude Include="object.h" />
     <ClInclude Include="singlemesh.h" />
     <ClInclude Include="triangle.h" />
+    <ClInclude Include="Barrel.h" />
+    <ClInclude Include="CharactersDraw.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Shaders">
@@ -40,6 +44,19 @@
       <Filter>Shaders</Filter>
     </None>
     <None Include="skyboxShader.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="perPixel.vert">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="perPixel.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="packages.config" />
+    <None Include="text.vert">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="text.frag">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>

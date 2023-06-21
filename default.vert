@@ -2,6 +2,7 @@
 
 in vec3 position;
 in vec2 texCoord;
+in vec3 normals;
 
 uniform mat4 PVM;
 
