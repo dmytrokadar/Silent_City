@@ -162,7 +162,7 @@ void loadTextShader() {
 
 	textShaderProgram.program = pgr::createProgram(shaders);
 	textShaderProgram.locations.position = glGetAttribLocation(textShaderProgram.program, "position");
-	textShaderProgram.locations.texture = glGetAttribLocation(textShaderProgram.program, "texCoord");
+	//textShaderProgram.locations.texture = glGetAttribLocation(textShaderProgram.program, "texCoord");
 
 	// other attributes and uniforms
 	textShaderProgram.locations.projection = glGetUniformLocation(textShaderProgram.program, "projection");
@@ -462,7 +462,7 @@ void drawScene(void)
 	glActiveTexture(GL_TEXTURE0);
 
 	drawSkybox();
-	characterDraw->draw("test Text", 25.0f, 25.0f, 1.0f, glm::vec3(1.0f));
+	characterDraw->draw("test Text", 100.0f, 100.0f, 1.0f, glm::vec3(1.0f));
 	//drawBanner();
 }
 

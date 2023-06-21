@@ -33,8 +33,8 @@ CharactersDraw::CharactersDraw(ShaderProgram* shdrPrg, float monitorWidth, float
 	glGenBuffers(1, &geometry->vertexBufferObject);
 	glBindBuffer(GL_ARRAY_BUFFER, geometry->vertexBufferObject);
 	//TODO mb static
-	glBufferData(GL_ARRAY_BUFFER, 24*sizeof(float), NULL, GL_DYNAMIC_DRAW);
-	glEnableVertexAttribArray(0);
+	glBufferData(GL_ARRAY_BUFFER, 6*4*sizeof(float), NULL, GL_DYNAMIC_DRAW);
+	glEnableVertexAttribArray(shaderProgram->locations.position);
 	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -65,22 +65,27 @@ void CharactersDraw::draw(std::string text, float posX, float posY, float scale,
 
 	for (char i : text) {
 		Character c = characters[i];
-		//std::cout << c.wigth;
+		/*std::cout << c.texture << " " << 
+			characters[i].bearingX << " " <<
+		characters[i].bearingY << " " <<
+		characters[i].wigth << " " <<
+		characters[i].height << " " <<
+		characters[i].advance << std::endl;*/
 
 		float x = posX + c.bearingX * scale;
-		float y = posY - (c.height - c.bearingX) * scale;
+		float y = posY - (c.height - c.bearingY) * scale;
 
 		float width = c.wigth * scale;
 		float height = c.height * scale;
 
 		float vertices[6][4] = {
-			{ x,     y + height,   0.0f, 0.0f },
-			{ x,     y,       0.0f, 1.0f },
-			{ x + width, y,       1.0f, 1.0f },
+			{ x,         y + height,  0.0f, 0.0f },
+			{ x,         y,			  0.0f, 1.0f },
+			{ x + width, y,			  1.0f, 1.0f },
 
-			{ x,     y + height,   0.0f, 0.0f },
-			{ x + width, y,       1.0f, 1.0f },
-			{ x + width, y + height,   1.0f, 0.0f }
+			{ x,         y + height,  0.0f, 0.0f },
+			{ x + width, y,           1.0f, 1.0f },
+			{ x + width, y + height,  1.0f, 0.0f }
 		};
 
 		glBindTexture(GL_TEXTURE_2D, c.texture);
@@ -104,9 +109,9 @@ void CharactersDraw::mapAllCharacters() {
 			continue;
 		}
 
-		glGenTextures(1, &characters->texture);
+		glGenTextures(1, &characters[i].texture);
 		glActiveTexture(GL_TEXTURE3);
-		glBindTexture(GL_TEXTURE_2D, characters->texture);
+		glBindTexture(GL_TEXTURE_2D, characters[i].texture);
 		glTexImage2D(
 			GL_TEXTURE_2D,
 			0,
@@ -128,6 +133,8 @@ void CharactersDraw::mapAllCharacters() {
 		characters[i].wigth = face->glyph->bitmap.width;
 		characters[i].height = face->glyph->bitmap.rows;
 		characters[i].advance = face->glyph->advance.x;
+
+		std::cout << *face->glyph->bitmap.buffer << std::endl;
 	}
 
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);

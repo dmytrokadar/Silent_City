@@ -10,6 +10,6 @@ uniform vec3 textColor;
 void main() {
 	vec4 sampledTex = vec4(1.0f);
 	sampledTex.w = texture(sampl, texCoord_v).r;
-	fragmentColor = vec4(textColor, sampledTex) * sampledTex;
+	fragmentColor = vec4(textColor, 1.0f) * sampledTex;
 	//fragmentColor = vec4(0.5f, 1.0f, 1.0f, 1.0f);
 }
