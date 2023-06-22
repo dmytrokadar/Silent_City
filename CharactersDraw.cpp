@@ -6,6 +6,8 @@
 CharactersDraw::CharactersDraw(ShaderProgram* shdrPrg, float monitorWidth, float monitorHeight) : shaderProgram(shdrPrg) {
 	geometry = new ObjectGeometry;
 
+	
+
 	if (FT_Init_FreeType(&ft))
 	{
 		std::cout << "ERROR::FREETYPE: Could not init FreeType Library" << std::endl;
@@ -64,6 +66,8 @@ void CharactersDraw::draw(std::string text, float posX, float posY, float scale,
 	glBindVertexArray(geometry->vertexArrayObject);
 
 	for (char i : text) {
+
+		//std::cout << i;
 		Character c = characters[i];
 		/*std::cout << c.texture << " " << 
 			characters[i].bearingX << " " <<
@@ -109,6 +113,9 @@ void CharactersDraw::mapAllCharacters() {
 			continue;
 		}
 
+		FT_Render_Glyph(face->glyph, FT_RENDER_MODE_NORMAL);
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
 		glGenTextures(1, &characters[i].texture);
 		glActiveTexture(GL_TEXTURE3);
 		glBindTexture(GL_TEXTURE_2D, characters[i].texture);
@@ -134,7 +141,7 @@ void CharactersDraw::mapAllCharacters() {
 		characters[i].height = face->glyph->bitmap.rows;
 		characters[i].advance = face->glyph->advance.x;
 
-		std::cout << *face->glyph->bitmap.buffer << std::endl;
+		//std::cout << *face->glyph->bitmap.buffer << std::endl;
 	}
 
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);

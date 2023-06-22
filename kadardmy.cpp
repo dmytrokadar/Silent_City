@@ -141,6 +141,7 @@ void loadDefaultShader() {
 	commonShaderProgram.locations.light = glGetUniformLocation(commonShaderProgram.program, "light");
 	commonShaderProgram.locations.lightPos = glGetUniformLocation(commonShaderProgram.program, "lightPos");
 	commonShaderProgram.locations.cameraPos = glGetUniformLocation(commonShaderProgram.program, "cameraPos");
+	commonShaderProgram.locations.isFog = glGetUniformLocation(commonShaderProgram.program, "isFog");
 
 	assert(commonShaderProgram.locations.PVMmatrix != -1);
 	assert(commonShaderProgram.locations.position != -1);
@@ -681,16 +682,17 @@ void initApplication() {
 
 	loadShaderPrograms();
 	glEnable(GL_DEPTH_TEST);
+	//glPixelStore(GL_UNPACK_ALIGNMENT, 1);
 	//glUniform1i(commonShaderProgram.locations.sampl, 0);
 
 	//objects.push_back(new Triangle(&commonShaderProgram));
 	objects.push_back(new Cube(&commonShaderProgram));
-	/*objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, 2.5f, 0.0f)));
+	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, 2.5f, 0.0f)));
 	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, 2.5f, 2.5f)));
 	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, 2.5f, -2.5f)));
 	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(-2.5f, 0.0f, 0.0f)));
 	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(-2.5f, -2.5f, 0.0f)));
-	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, -2.5f, 0.0f)));*/
+	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, -2.5f, 0.0f)));
 	sun = new Sun(&sunShaderProgram, sunPos);
 	// objects.push_back(new SingleMesh(&commonShaderProgram));
 	//(objects[0])->loadObjFromFile("data/cubeTriangulated.obj");

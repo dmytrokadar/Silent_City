@@ -7,11 +7,11 @@
 
 typedef struct _Character{
 	GLuint texture;
-	GLuint bearingX;
-	GLuint bearingY;
-	GLuint wigth;
-	GLuint height; 
-	GLuint advance;
+	int bearingX;
+	int bearingY;
+	int wigth;
+	int height; 
+	int advance;
 }Character;
 
 class CharactersDraw

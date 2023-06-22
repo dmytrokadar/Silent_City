@@ -32,6 +32,7 @@ typedef struct _ShaderProgram {
 		GLint textColor;
 		GLint lightPos;
 		GLint cameraPos;
+		bool isFog;
 	} locations;
 
 	// ...
