@@ -61,6 +61,7 @@ void CharactersDraw::draw(std::string text, float posX, float posY, float scale,
 	glUniform3f(shaderProgram->locations.textColor, color.x, color.y, color.z);
 
 	glUniformMatrix4fv(shaderProgram->locations.projection, 1, GL_FALSE, glm::value_ptr(projection));
+	glUniform1i(shaderProgram->locations.sampl, 3);
 
 	glActiveTexture(GL_TEXTURE3);
 	glBindVertexArray(geometry->vertexArrayObject);

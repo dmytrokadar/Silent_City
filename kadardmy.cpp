@@ -686,13 +686,17 @@ void initApplication() {
 	//glUniform1i(commonShaderProgram.locations.sampl, 0);
 
 	//objects.push_back(new Triangle(&commonShaderProgram));
-	objects.push_back(new Cube(&commonShaderProgram));
-	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, 2.5f, 0.0f)));
+	//objects.push_back(new Cube(&commonShaderProgram));
+	for (float i = 0; i < 3.9; i += 0.1) {
+		objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, 2.5f, 2.5f), "data/cubeTriangulated.obj", i));
+	}
+
+	/*objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, 2.5f, 0.0f)));
 	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, 2.5f, 2.5f)));
 	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, 2.5f, -2.5f)));
 	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(-2.5f, 0.0f, 0.0f)));
 	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(-2.5f, -2.5f, 0.0f)));
-	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, -2.5f, 0.0f)));
+	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, -2.5f, 0.0f)));*/
 	sun = new Sun(&sunShaderProgram, sunPos);
 	// objects.push_back(new SingleMesh(&commonShaderProgram));
 	//(objects[0])->loadObjFromFile("data/cubeTriangulated.obj");
