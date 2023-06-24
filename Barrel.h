@@ -32,3 +32,23 @@ private:
 	glm::vec3 position;
 	bool initialized;  ///< object has the shader with defined locations
 };
+
+class Terrain : public ObjectInstance
+{
+public:
+
+	Terrain(ShaderProgram* shdrPrg = nullptr, int height = 1, int width = 1);
+	~Terrain();
+
+	void update(float elapsedTime, const glm::mat4* parentModelMatrix) override;
+	void draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix) override;
+	void generateTerrain();
+
+private:
+	bool initialized;  ///< object has the shader with defined locations
+	std::vector<float> vertices;
+	std::vector<float> normals;
+	std::vector<float> textures;
+	int height;
+	int width;
+};

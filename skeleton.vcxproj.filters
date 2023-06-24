@@ -15,6 +15,7 @@
     <ClInclude Include="triangle.h" />
     <ClInclude Include="Barrel.h" />
     <ClInclude Include="CharactersDraw.h" />
+    <ClInclude Include="Properties.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Shaders">

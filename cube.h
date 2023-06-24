@@ -7,7 +7,7 @@ class Cube : public ObjectInstance
 public:
 
 	Cube(ShaderProgram* shdrPrg = nullptr, const glm::vec3 pos = glm::vec3(0.0f), std::string objName = "data/cubeTriangulated.obj");
-	Cube(ShaderProgram* shdrPrg = nullptr, const glm::vec3 pos = glm::vec3(0.0f), std::string objName = "data/cubeTriangulated.obj", float t = 0.0f);
+	Cube(float t, ShaderProgram* shdrPrg = nullptr, const glm::vec3 pos = glm::vec3(0.0f), std::string objName = "data/cubeTriangulated.obj");
 	~Cube();
 
 	void update(float elapsedTime, const glm::mat4* parentModelMatrix) override;

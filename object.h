@@ -54,6 +54,7 @@ typedef struct _ObjectGeometry {
 	unsigned int  numTriangles;         ///< number of triangles in the mesh
 	GLuint        texture;				///< texture id
 	std::vector<float> vertices;
+	std::vector<unsigned int> indexes;
 
 	// ...
 } ObjectGeometry;
@@ -195,9 +196,9 @@ public:
 				normalsSoup.push_back(normal);
 			}
 			if (lineFirstWord == faceSign) {
-				std::vector<int> faceVertexes;
+				/*std::vector<int> faceVertexes;
 				std::vector<int> faceTextures;
-				std::vector<int> faceNormals;
+				std::vector<int> faceNormals;*/
 
 				facesNum++;
 				

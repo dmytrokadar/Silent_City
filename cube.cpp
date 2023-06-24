@@ -210,8 +210,11 @@ Cube::Cube(ShaderProgram* shdrPrg, const glm::vec3 pos, std::string objName) : O
 
 	glGenBuffers(1, &geometry->vertexBufferObject);
 	glBindBuffer(GL_ARRAY_BUFFER, geometry->vertexBufferObject);
+
+	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, geometry->elementBufferObject);
 	//&(geometry->vertices[0])
 	glBufferData(GL_ARRAY_BUFFER, geometry->vertices.size() * sizeof(float), (vertices), GL_STATIC_DRAW);
+	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, geometry->indexes.size() * sizeof(unsigned int), &(geometry->indexes[0]), GL_STATIC_DRAW);
 
 	if ((shaderProgram != nullptr) && shaderProgram->initialized && (shaderProgram->locations.position != -1) && (shaderProgram->locations.PVMmatrix != -1)) {
 		glEnableVertexAttribArray(shaderProgram->locations.position);
@@ -233,7 +236,7 @@ Cube::Cube(ShaderProgram* shdrPrg, const glm::vec3 pos, std::string objName) : O
 	}
 }
 
-Cube::Cube(ShaderProgram* shdrPrg, const glm::vec3 pos, std::string objName, float t) : ObjectInstance(shdrPrg), initialized(false)
+Cube::Cube(float t, ShaderProgram* shdrPrg, const glm::vec3 pos, std::string objName) : ObjectInstance(shdrPrg), initialized(false)
 {
 	geometry = new ObjectGeometry;
 
@@ -409,6 +412,7 @@ Cube::Cube(ShaderProgram* shdrPrg, const glm::vec3 pos, std::string objName, flo
 
 	glGenBuffers(1, &geometry->vertexBufferObject);
 	glBindBuffer(GL_ARRAY_BUFFER, geometry->vertexBufferObject);
+
 	//&(geometry->vertices[0])
 	glBufferData(GL_ARRAY_BUFFER, geometry->vertices.size() * sizeof(float), (vertices), GL_STATIC_DRAW);
 
@@ -433,6 +437,8 @@ Cube::Cube(ShaderProgram* shdrPrg, const glm::vec3 pos, std::string objName, flo
 }
 
 void Cube::makeCurve() {
+	// every segment has two knots and handlers, but second knot of every segment
+	// is first knot of next segment, so we can store them only once
 	// segnent 0
 	knots.push_back(glm::vec3(-1.0000, 0.0000, 0.0000));
 	handles.push_back(glm::vec3(-0.3260, 0.2139, 0.0000));

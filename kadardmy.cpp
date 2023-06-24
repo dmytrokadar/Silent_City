@@ -40,7 +40,7 @@
 #include "Barrel.h"
 #include "CharactersDraw.h"
 #include "singlemesh.h"
-//#include <AntTweakBar.h>
+#include <AntTweakBar.h>
 #include <ft2build.h>
 #include FT_FREETYPE_H 
 
@@ -96,7 +96,7 @@ const float sensetivity = 0.1f;
 glm::mat4 viewMatrix = glm::mat4(1.0f);
 glm::mat4 projectionMatrix = glm::mat4(1.0f);
 
-//TwBar* menuBar;
+TwBar* menuBar;
 
 std::string skyboxFaces[] = {
 	"data/Skybox/posx.jpg",
@@ -112,9 +112,9 @@ struct StateInfo {
 	int windowHeight;
 
 	bool freeCamera;
+	bool fog;
 	int fixedCameraPos;
 	float sensetivity;
-
 } stateInfo;
 
 void loadDefaultShader() {
@@ -462,7 +462,9 @@ void drawScene(void)
 	glUniform1i(commonShaderProgram.locations.sampl, 0);
 	glActiveTexture(GL_TEXTURE0);
 
-	drawSkybox();
+	//if (!stateInfo.fog) {
+		drawSkybox();
+	//}
 	characterDraw->draw("test Text", 100.0f, 100.0f, 1.0f, glm::vec3(1.0f));
 	//drawBanner();
 }
@@ -481,8 +483,8 @@ void displayCb() {
 	// draw the window contents (scene objects)
 	drawScene();
 
-	//TwDraw();
 	glDisable(GL_BLEND);
+	TwDraw();
 	glutSwapBuffers();
 }
 
@@ -511,7 +513,8 @@ void reshapeCb(int newWidth, int newHeight) {
  */
 void keyboardCb(unsigned char keyPressed, int mouseX, int mouseY) {
 	//CAMERA_SPEED = delayFrame / 5.0f;
-
+	if (TwEventKeyboardGLUT(keyPressed, mouseX, mouseY))
+		return;
 
 	switch (keyPressed)
 	{
@@ -556,6 +559,8 @@ void keyboardUpCb(unsigned char keyReleased, int mouseX, int mouseY) {
  * \param mouseY mouse (cursor) Y position
  */
 void specialKeyboardCb(int specKeyPressed, int mouseX, int mouseY) {
+	if (TwEventSpecialGLUT(specKeyPressed, mouseX, mouseY))
+		return;
 }
 
 void specialKeyboardUpCb(int specKeyReleased, int mouseX, int mouseY) {
@@ -576,6 +581,8 @@ void specialKeyboardUpCb(int specKeyReleased, int mouseX, int mouseY) {
  * \param mouseY mouse (cursor) Y position
  */
 void mouseCb(int buttonPressed, int buttonState, int mouseX, int mouseY) {
+	if (TwEventMouseButtonGLUT(buttonPressed, buttonState, mouseX, mouseY))
+		return;
 }
 
 /**
@@ -585,7 +592,8 @@ void mouseCb(int buttonPressed, int buttonState, int mouseX, int mouseY) {
  * \param mouseY mouse (cursor) Y position
  */
 void mouseMotionCb(int mouseX, int mouseY) {
-
+	if (TwEventMouseMotionGLUT(mouseX, mouseY))
+		return;
 }
 
 /**
@@ -594,6 +602,9 @@ void mouseMotionCb(int mouseX, int mouseY) {
  * \param mouseY mouse (cursor) Y position
  */
 void passiveMouseMotionCb(int mouseX, int mouseY) {
+
+	/*if (TwEventMouseMotionGLUT(mouseX, mouseY))
+		return;*/
 
 	// mouse hovering over window
 
@@ -679,24 +690,25 @@ void timerCb(int)
 void initApplication() {
 	// init OpenGL
 	// - all programs (shaders), buffers, textures, ...
-
+	//stateInfo.fog = true;
+	//glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 	loadShaderPrograms();
 	glEnable(GL_DEPTH_TEST);
 	//glPixelStore(GL_UNPACK_ALIGNMENT, 1);
 	//glUniform1i(commonShaderProgram.locations.sampl, 0);
 
 	//objects.push_back(new Triangle(&commonShaderProgram));
-	//objects.push_back(new Cube(&commonShaderProgram));
-	for (float i = 0; i < 3.9; i += 0.1) {
-		objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, 2.5f, 2.5f), "data/cubeTriangulated.obj", i));
-	}
+	objects.push_back(new Cube(&commonShaderProgram));
+	/*for (float i = 0; i < 3.9; i += 0.1) {
+		objects.push_back(new Cube(i, &commonShaderProgram, glm::vec3(0.0f, 2.5f, 2.5f), "data/cubeTriangulated.obj"));
+	}*/
 
-	/*objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, 2.5f, 0.0f)));
+	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, 2.5f, 0.0f)));
 	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, 2.5f, 2.5f)));
 	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, 2.5f, -2.5f)));
 	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(-2.5f, 0.0f, 0.0f)));
 	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(-2.5f, -2.5f, 0.0f)));
-	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, -2.5f, 0.0f)));*/
+	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, -2.5f, 0.0f)));
 	sun = new Sun(&sunShaderProgram, sunPos);
 	// objects.push_back(new SingleMesh(&commonShaderProgram));
 	//(objects[0])->loadObjFromFile("data/cubeTriangulated.obj");
@@ -737,31 +749,37 @@ int main(int argc, char** argv) {
 
 	glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH);
 
-	// for each window
-	{
-		//   initial window size + title
-		glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
-		glutCreateWindow(WINDOW_TITLE);
+	//   initial window size + title
+	glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
+	glutCreateWindow(WINDOW_TITLE);
 
-		/*TwInit(TW_OPENGL, NULL);
-		TwWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);*/
-		//menuBar = TwNewBar("Menu");
-		//TwDefine("Menu size='240 420' color='20 20 20' fontsize=3");
+	// initialize pgr-framework (GL, DevIl, etc.)
+	if (!pgr::initialize(pgr::OGL_VER_MAJOR, pgr::OGL_VER_MINOR))
+		pgr::dieWithError("pgr init failed, required OpenGL not supported?");
+	TwInit(TW_OPENGL_CORE, NULL);
+	TwWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
 
-		//CHECK_GL_ERROR();
-		// callbacks - use only those you need
-		glutDisplayFunc(displayCb);
-		glutReshapeFunc(reshapeCb);
-		glutKeyboardFunc(keyboardCb);
-		 glutKeyboardUpFunc(keyboardUpCb);
-		// glutSpecialFunc(specialKeyboardCb);     // key pressed
-		 glutSpecialUpFunc(specialKeyboardUpCb); // key released
-		 glutMouseFunc(mouseCb);
-		 glutMotionFunc(mouseMotionCb);
-		 glutPassiveMotionFunc(passiveMouseMotionCb);
-		 glutIgnoreKeyRepeat(true);
-		 //texture = pgr::createTexture(TEST_Texture);
+
+	//CHECK_GL_ERROR();
+	// callbacks - use only those you need
+	glutDisplayFunc(displayCb);
+	glutReshapeFunc(reshapeCb);
+
+	glutKeyboardFunc(keyboardCb);
+	glutKeyboardUpFunc(keyboardUpCb);
+	glutSpecialFunc(specialKeyboardCb);     // key pressed
+	glutSpecialUpFunc(specialKeyboardUpCb); // key released
+
+	glutMouseFunc(mouseCb);
+	glutMotionFunc(mouseMotionCb);
+	glutPassiveMotionFunc(passiveMouseMotionCb);
+	glutIgnoreKeyRepeat(true);
+	TwGLUTModifiersFunc(glutGetModifiers);
+	//texture = pgr::createTexture(TEST_Texture);
 		 
+	menuBar = TwNewBar("Menu");
+	TwDefine("Menu size='240 420' color='20 20 20' fontsize=3");
+
 
 #ifndef SKELETON // @task_1_0
 		glutTimerFunc(33, timerCb, 0);
@@ -769,12 +787,7 @@ int main(int argc, char** argv) {
 		// glutTimerFunc(33, timerCb, 0);
 #endif // task_1_0
 
-	}
-	// end for each window 
 
-	// initialize pgr-framework (GL, DevIl, etc.)
-	if (!pgr::initialize(pgr::OGL_VER_MAJOR, pgr::OGL_VER_MINOR))
-		pgr::dieWithError("pgr init failed, required OpenGL not supported?");
 
 	// init your stuff - shaders & program, buffers, locations, state of the application
 	initApplication();
