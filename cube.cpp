@@ -1,14 +1,14 @@
 #include <iostream>
 #include "cube.h"
 
-const char* TEST_Texture = "data/texture_test_small.jpg";
+const char* TEST_Texture = "data/CarTexture.png";
 
 void Cube::update(float elapsedTime, const glm::mat4* parentModelMatrix) {
 	
 	ObjectInstance::update(elapsedTime, parentModelMatrix);
 }
 
-void Cube::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix, const glm::vec3 light, const glm::vec3 lightPos, const glm::vec3 cameraPos)
+void Cube::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix, const glm::vec3 light, const glm::vec3 lightPos, const glm::vec3 cameraPos, const glm::vec3 cameraDirection)
 {
 	/*position = countPositionOnCurve(tGlobal);
 	tGlobal += 0.05f;*/
@@ -21,9 +21,16 @@ void Cube::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix, 
 		glUniformMatrix4fv(shaderProgram->locations.PVMmatrix, 1, GL_FALSE, glm::value_ptr(projectionMatrix * viewMatrix * model));
 
 		glUniformMatrix4fv(shaderProgram->locations.model, 1, GL_FALSE, glm::value_ptr(model));
+		//flashlight
+		glUniform1f(shaderProgram->locations.flashlightAngle, 10.0f);
+		//TODO change to another color than light
+		glUniform3f(shaderProgram->locations.flashlightColor, light.x, light.y, light.z);
+		//glUniform3f(shaderProgram->locations.flashlightPos, lightPos.x, lightPos.y, lightPos.z);
+
 		glUniform3f(shaderProgram->locations.light, light.x, light.y, light.z);
 		glUniform3f(shaderProgram->locations.lightPos, lightPos.x, lightPos.y, lightPos.z);
 		glUniform3f(shaderProgram->locations.cameraPos, cameraPos.x, cameraPos.y, cameraPos.z);
+		glUniform3f(shaderProgram->locations.cameraDirection, cameraDirection.x, cameraDirection.y, cameraDirection.z);
 		glUniform1i(shaderProgram->locations.isFog, true);
 
 		glActiveTexture(GL_TEXTURE0);
@@ -213,7 +220,7 @@ Cube::Cube(ShaderProgram* shdrPrg, const glm::vec3 pos, std::string objName) : O
 
 	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, geometry->elementBufferObject);
 	//&(geometry->vertices[0])
-	glBufferData(GL_ARRAY_BUFFER, geometry->vertices.size() * sizeof(float), (vertices), GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, geometry->vertices.size() * sizeof(float), &(geometry->vertices[0]), GL_STATIC_DRAW);
 	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, geometry->indexes.size() * sizeof(unsigned int), &(geometry->indexes[0]), GL_STATIC_DRAW);
 
 	if ((shaderProgram != nullptr) && shaderProgram->initialized && (shaderProgram->locations.position != -1) && (shaderProgram->locations.PVMmatrix != -1)) {

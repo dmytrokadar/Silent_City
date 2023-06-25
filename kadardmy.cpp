@@ -110,6 +110,9 @@ std::string skyboxFaces[] = {
 struct StateInfo {
 	int windowWidth;
 	int windowHeight;
+	int worldBorderX;
+	int worldBorderY;
+	int worldBorderZ;
 
 	bool freeCamera;
 	bool fog;
@@ -138,9 +141,18 @@ void loadDefaultShader() {
 	commonShaderProgram.locations.PVMmatrix = glGetUniformLocation(commonShaderProgram.program, "PVM");
 	commonShaderProgram.locations.model = glGetUniformLocation(commonShaderProgram.program, "model");
 	commonShaderProgram.locations.sampl = glGetUniformLocation(commonShaderProgram.program, "sampl");
+
+	//flashlight uniforms
+	commonShaderProgram.locations.flashlightAngle = glGetUniformLocation(commonShaderProgram.program, "flashlightAngle");
+	//commonShaderProgram.locations.flashlightPos = glGetUniformLocation(commonShaderProgram.program, "flashlightPos");
+	commonShaderProgram.locations.flashlightColor = glGetUniformLocation(commonShaderProgram.program, "flashlightColor");
+
+	//light uniforms
 	commonShaderProgram.locations.light = glGetUniformLocation(commonShaderProgram.program, "light");
 	commonShaderProgram.locations.lightPos = glGetUniformLocation(commonShaderProgram.program, "lightPos");
+
 	commonShaderProgram.locations.cameraPos = glGetUniformLocation(commonShaderProgram.program, "cameraPos");
+	commonShaderProgram.locations.cameraDirection = glGetUniformLocation(commonShaderProgram.program, "cameraDirection");
 	commonShaderProgram.locations.isFog = glGetUniformLocation(commonShaderProgram.program, "isFog");
 
 	assert(commonShaderProgram.locations.PVMmatrix != -1);
@@ -455,16 +467,16 @@ void drawScene(void)
 	projectionMatrix = glm::perspective(glm::radians(60.0f), float(glutGet(GLUT_WINDOW_WIDTH)) / float(glutGet(GLUT_WINDOW_HEIGHT)), 0.1f, 100.0f);
 	for (ObjectInstance* object : objects) {   // for (auto object : objects) {
 		if (object != nullptr)
-			object->draw(viewMatrix, projectionMatrix, glm::vec3(1.0f, 1.0f, 1.0f), sunPos, cameraPosGlobal);
+			object->draw(viewMatrix, projectionMatrix, glm::vec3(1.0f, 1.0f, 1.0f), sunPos, cameraPosGlobal, cameraLook);
 	}
 	sun->draw(viewMatrix, projectionMatrix);
 
 	glUniform1i(commonShaderProgram.locations.sampl, 0);
 	glActiveTexture(GL_TEXTURE0);
 
-	//if (!stateInfo.fog) {
+	if (!stateInfo.fog) {
 		drawSkybox();
-	//}
+	}
 	characterDraw->draw("test Text", 100.0f, 100.0f, 1.0f, glm::vec3(1.0f));
 	//drawBanner();
 }
@@ -530,6 +542,9 @@ void keyboardCb(unsigned char keyPressed, int mouseX, int mouseY) {
 			std::cout << "Sun stopped" << std::endl;
 			SUN_MOTION_FLAG = !SUN_MOTION_FLAG;
 			break;
+
+		case 'f':
+			stateInfo.fog = !stateInfo.fog;
 		default:
 			break;
 	}
@@ -653,25 +668,42 @@ void timerCb(int)
 	}
 #endif // task_1_0
 
+	glm::vec3 direction = CAMERA_SPEED * cameraLook;
+
 	//inspiration https://learnopengl.com/Getting-started/Camera
 	if (keys['w']) {
 		//std::cout << "w pressed" << std::endl;
-		cameraPos += CAMERA_SPEED * cameraLook;
+		cameraPos += direction;
+		if(cameraPos.x > stateInfo.worldBorderX || cameraPos.x < -stateInfo.worldBorderX ||
+			cameraPos.z > stateInfo.worldBorderZ || cameraPos.z < -stateInfo.worldBorderZ)
+			cameraPos -= direction;
+
 	}
 
 	if (keys['s']) {
 		//std::cout << "s pressed" << std::endl;
-		cameraPos -= CAMERA_SPEED * cameraLook;
+		cameraPos -= direction;
+		if (cameraPos.x > stateInfo.worldBorderX || cameraPos.x < -stateInfo.worldBorderX ||
+			cameraPos.z > stateInfo.worldBorderZ || cameraPos.z < -stateInfo.worldBorderZ)
+		cameraPos += direction;
+
 	}
 
+	direction = CAMERA_SPEED * glm::normalize(glm::cross(cameraLook, cameraUp));
 	if (keys['d']) {
 		//std::cout << "d pressed" << std::endl;
-		cameraPos += CAMERA_SPEED * glm::normalize(glm::cross(cameraLook, cameraUp));
+		cameraPos += direction;
+		if (cameraPos.x > stateInfo.worldBorderX || cameraPos.x < -stateInfo.worldBorderX ||
+			cameraPos.z > stateInfo.worldBorderZ || cameraPos.z < -stateInfo.worldBorderZ)
+		cameraPos -= direction;
 	}
 
 	if (keys['a']) {
 			//std::cout << "a pressed" << std::endl;
-			cameraPos -= CAMERA_SPEED * glm::normalize(glm::cross(cameraLook, cameraUp));
+			cameraPos -= direction;
+		if (cameraPos.x > stateInfo.worldBorderX || cameraPos.x < -stateInfo.worldBorderX ||
+			cameraPos.z > stateInfo.worldBorderZ || cameraPos.z < -stateInfo.worldBorderZ)
+			cameraPos += direction;
 	}
 
 	// and plan a new event
@@ -690,8 +722,13 @@ void timerCb(int)
 void initApplication() {
 	// init OpenGL
 	// - all programs (shaders), buffers, textures, ...
-	//stateInfo.fog = true;
-	//glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+	//init parameters
+	stateInfo.fog = true;
+	stateInfo.worldBorderX = 50;
+	stateInfo.worldBorderY = 2000;
+	stateInfo.worldBorderZ = 50;
+
+	glClearColor(0.7f, 0.7f, 0.7f, 1.0f);
 	loadShaderPrograms();
 	glEnable(GL_DEPTH_TEST);
 	//glPixelStore(GL_UNPACK_ALIGNMENT, 1);
@@ -703,7 +740,7 @@ void initApplication() {
 		objects.push_back(new Cube(i, &commonShaderProgram, glm::vec3(0.0f, 2.5f, 2.5f), "data/cubeTriangulated.obj"));
 	}*/
 
-	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, 2.5f, 0.0f)));
+	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, 2.5f, 0.0f), "data/car.obj"));
 	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, 2.5f, 2.5f)));
 	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, 2.5f, -2.5f)));
 	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(-2.5f, 0.0f, 0.0f)));

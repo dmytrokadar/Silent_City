@@ -28,10 +28,16 @@ typedef struct _ShaderProgram {
 		GLint model;
 		GLint projection;
 		GLint sampl;
+		//flashlight uniforms
+		GLint flashlightColor;
+		GLint flashlightPos;
+		GLint flashlightAngle;
+		//light unitforms
 		GLint light;
-		GLint textColor;
 		GLint lightPos;
+		GLint textColor;
 		GLint cameraPos;
+		GLint cameraDirection;
 		bool isFog;
 	} locations;
 
@@ -128,14 +134,14 @@ public:
 		}
 	}
 
-	virtual void draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix, const glm::vec3 light, const glm::vec3 lightPos, const glm::vec3 cameraPos) {
+	virtual void draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix, const glm::vec3 light, const glm::vec3 lightPos, const glm::vec3 cameraPos, const glm::vec3 cameraDirection) {
 		// draw instance geometry using globalModelMatrix
 		// ...
 
 		// process all children
 		for (ObjectInstance* child : children) {   //for (auto child : children) {
 			if (child != nullptr)
-				child->draw(viewMatrix, projectionMatrix, light, lightPos, cameraPos);
+				child->draw(viewMatrix, projectionMatrix, light, lightPos, cameraPos, cameraDirection);
 		}
 	}
 

@@ -444,46 +444,46 @@ Sun::~Sun() {
 	initialized = false;
 }
 
-void Terrain::update(float elapsedTime, const glm::mat4* parentModelMatrix) {
-
-	ObjectInstance::update(elapsedTime, parentModelMatrix);
-}
-
-void Terrain::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix)
-{
-}
-
-// generates from -height and -width to width and height vertexes
-void Terrain::generateTerrain() {
-	for (int i = -height; i < height; i++) {
-		for (int j = -width; j < width; j++) {
-			vertices.emplace_back(j, 0, i);
-		}
-	}
-
-	for (int i = -height; i < height-1; i++) {
-		for (int j = -width; j < width; j++) {
-			vertices.emplace_back(j, 0, i);
-		}
-	}
-}
-
-Terrain::Terrain(ShaderProgram* shdrPrg, int h, int w) : ObjectInstance(shdrPrg)
-{
-	geometry = new ObjectGeometry;
-	height = h;
-	width = w;
-	
-	//generateTerrain();
-}
-
-Terrain::~Terrain() {
-	glDeleteVertexArrays(1, &(geometry->vertexArrayObject));
-	glDeleteBuffers(1, &(geometry->elementBufferObject));
-	glDeleteBuffers(1, &(geometry->vertexBufferObject));
-
-	delete geometry;
-	geometry = nullptr;
-
-	initialized = false;
-}
+//void Terrain::update(float elapsedTime, const glm::mat4* parentModelMatrix) {
+//
+//	ObjectInstance::update(elapsedTime, parentModelMatrix);
+//}
+//
+//void Terrain::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix)
+//{
+//}
+//
+//// generates from -height and -width to width and height vertexes
+//void Terrain::generateTerrain() {
+//	for (int i = -height; i < height; i++) {
+//		for (int j = -width; j < width; j++) {
+//			vertices.emplace_back(j, 0, i);
+//		}
+//	}
+//
+//	for (int i = -height; i < height-1; i++) {
+//		for (int j = -width; j < width; j++) {
+//			vertices.emplace_back(j, 0, i);
+//		}
+//	}
+//}
+//
+//Terrain::Terrain(ShaderProgram* shdrPrg, int h, int w) : ObjectInstance(shdrPrg)
+//{
+//	geometry = new ObjectGeometry;
+//	height = h;
+//	width = w;
+//	
+//	//generateTerrain();
+//}
+//
+//Terrain::~Terrain() {
+//	glDeleteVertexArrays(1, &(geometry->vertexArrayObject));
+//	glDeleteBuffers(1, &(geometry->elementBufferObject));
+//	glDeleteBuffers(1, &(geometry->vertexBufferObject));
+//
+//	delete geometry;
+//	geometry = nullptr;
+//
+//	initialized = false;
+//}
