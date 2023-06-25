@@ -51,7 +51,8 @@ constexpr char WINDOW_TITLE[] = "PGR: Application Skeleton";
 
 // objects
 ObjectList objects;
-Sun * sun;
+Sun* sun;
+Terrain* terrain;
 
 // utilities
 CharactersDraw* characterDraw;
@@ -474,6 +475,7 @@ void drawScene(void)
 			object->draw(viewMatrix, projectionMatrix, glm::vec3(1.0f, 1.0f, 1.0f), sunPos, cameraPosGlobal, cameraLook, stateInfo.fog);
 	}
 	sun->draw(viewMatrix, projectionMatrix);
+	terrain->draw(viewMatrix, projectionMatrix, glm::vec3(1.0f, 1.0f, 1.0f), sunPos, cameraPosGlobal, cameraLook, stateInfo.fog);
 
 	glUniform1i(commonShaderProgram.locations.sampl, 0);
 	glActiveTexture(GL_TEXTURE0);
@@ -769,6 +771,7 @@ void initApplication() {
 	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(-2.5f, -2.5f, 0.0f)));
 	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, -2.5f, 0.0f)));
 	sun = new Sun(&sunShaderProgram, sunPos);
+	terrain = new Terrain(&commonShaderProgram, stateInfo.worldBorderZ, stateInfo.worldBorderX);
 	// objects.push_back(new SingleMesh(&commonShaderProgram));
 	//(objects[0])->loadObjFromFile("data/cubeTriangulated.obj");
 

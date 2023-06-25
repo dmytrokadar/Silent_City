@@ -41,7 +41,7 @@ public:
 	~Terrain();
 
 	void update(float elapsedTime, const glm::mat4* parentModelMatrix) override;
-	void draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix) override;
+	void draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix, const glm::vec3 light, const glm::vec3 lightPos, const glm::vec3 cameraPos, const glm::vec3 cameraDirection, const bool isFog) override;
 	void generateTerrain();
 
 private:
@@ -49,7 +49,7 @@ private:
 	std::vector<float> vertices;
 	std::vector<float> normals;
 	std::vector<float> textures;
-	std::vector<int> indexes;
+	std::vector<unsigned> indexes;
 	int height;
 	int width;
 };

@@ -449,7 +449,7 @@ void Terrain::update(float elapsedTime, const glm::mat4* parentModelMatrix) {
 	ObjectInstance::update(elapsedTime, parentModelMatrix);
 }
 
-void Terrain::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix)
+void Terrain::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix, const glm::vec3 light, const glm::vec3 lightPos, const glm::vec3 cameraPos, const glm::vec3 cameraDirection, const bool isFog)
 {
 	if (initialized && (shaderProgram != nullptr)) {
 		glUseProgram(shaderProgram->program);
@@ -466,22 +466,22 @@ void Terrain::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatri
 		glUniformMatrix4fv(shaderProgram->locations.model, 1, GL_FALSE, glm::value_ptr(globalModelMatrix));
 		//flashlight
 		glUniform1f(shaderProgram->locations.flashlightAngle, glm::radians(20.0f));
-		//TODO change to another color than light
-		//glUniform3f(shaderProgram->locations.flashlightColor, light.x, light.y, light.z);
-		////glUniform3f(shaderProgram->locations.flashlightPos, lightPos.x, lightPos.y, lightPos.z);
+		glUniform3f(shaderProgram->locations.flashlightColor, light.x, light.y, light.z);
+		//glUniform3f(shaderProgram->locations.flashlightPos, lightPos.x, lightPos.y, lightPos.z);
 
-		//glUniform3f(shaderProgram->locations.light, light.x, light.y, light.z);
-		//glUniform3f(shaderProgram->locations.lightPos, lightPos.x, lightPos.y, lightPos.z);
-		//glUniform3f(shaderProgram->locations.cameraPos, cameraPos.x, cameraPos.y, cameraPos.z);
-		//glUniform3f(shaderProgram->locations.cameraDirection, cameraDirection.x, cameraDirection.y, cameraDirection.z);
-		//glUniform1i(shaderProgram->locations.isFog, 1);
-		//CHECK_GL_ERROR();
+		glUniform3f(shaderProgram->locations.light, light.x, light.y, light.z);
+		glUniform3f(shaderProgram->locations.lightPos, lightPos.x, lightPos.y, lightPos.z);
+		glUniform3f(shaderProgram->locations.cameraPos, cameraPos.x, cameraPos.y, cameraPos.z);
+		glUniform3f(shaderProgram->locations.cameraDirection, cameraDirection.x, cameraDirection.y, cameraDirection.z);
+		glUniform1i(shaderProgram->locations.isFog, isFog);
+		CHECK_GL_ERROR();
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, geometry->texture);
 		glBindVertexArray(geometry->vertexArrayObject);
 		glDrawArrays(GL_TRIANGLES, 0, geometry->numTriangles * 3);
 		glBindVertexArray(0);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	}
 	else {
 		std::cerr << "Cube::draw(): Can't draw, cube not initialized properly!" << std::endl;
@@ -500,8 +500,8 @@ void Terrain::generateTerrain() {
 	}
 
 	// indexes
-	for (int i = -height; i < height-1; i++) {
-		for (int j = -width; j < width; j++) {
+	for (int i = 0; i < (height*2)-1; i++) {
+		for (int j = 0; j < width*2; j++) {
 			indexes.push_back(i*width + j);
 			indexes.push_back((i+1)*width + j);
 		}
@@ -510,9 +510,9 @@ void Terrain::generateTerrain() {
 	// normals
 	for (int i = -height; i < height; i++) {
 		for (int j = -width; j < width; j++) {
-			normals.push_back(j);
+			normals.push_back(0.0f);
 			normals.push_back(1.0f);
-			normals.push_back(i);
+			normals.push_back(0.0f);
 		}
 	}
 
@@ -534,9 +534,10 @@ void Terrain::generateTerrain() {
 	}
 
 	//geometry->vertices = vertices;
-	geometry->vertices.insert(vertices.end(), normals.begin(), normals.end());
+	geometry->vertices.insert(geometry->vertices.end(), vertices.begin(), vertices.end());
+	geometry->vertices.insert(geometry->vertices.end(), normals.begin(), normals.end());
 	geometry->vertices.insert(geometry->vertices.end(), textures.begin(), textures.end());
-	geometry->numTriangles = textures.size() / 2;
+	geometry->numTriangles = indexes.size();
 }
 
 Terrain::Terrain(ShaderProgram* shdrPrg, int h, int w) : ObjectInstance(shdrPrg)
@@ -564,7 +565,7 @@ Terrain::Terrain(ShaderProgram* shdrPrg, int h, int w) : ObjectInstance(shdrPrg)
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, geometry->elementBufferObject);
 
 	glBufferData(GL_ARRAY_BUFFER, geometry->vertices.size() * sizeof(float), &(vertices[0]), GL_STATIC_DRAW);
-
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexes.size() * sizeof(unsigned), &(indexes[0]), GL_STATIC_DRAW);
 	if ((shaderProgram != nullptr) && shaderProgram->initialized && (shaderProgram->locations.position != -1) && (shaderProgram->locations.PVMmatrix != -1)) {
 		glEnableVertexAttribArray(shaderProgram->locations.position);
 		glVertexAttribPointer(shaderProgram->locations.position, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);

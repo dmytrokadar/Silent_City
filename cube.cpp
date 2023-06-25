@@ -40,7 +40,7 @@ void Cube::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix, 
 		CHECK_GL_ERROR();
 		glUniform3f(shaderProgram->locations.cameraDirection, cameraDirection.x, cameraDirection.y, cameraDirection.z);
 		CHECK_GL_ERROR();
-		glUniform1i(shaderProgram->locations.isFog, 1);
+		glUniform1i(shaderProgram->locations.isFog, isFog);
 		CHECK_GL_ERROR();
 
 		glActiveTexture(GL_TEXTURE0);

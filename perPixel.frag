@@ -77,10 +77,10 @@ void main() {
 	calculateFog();
 
 	vec3 lightColor = (ambient + difuse + specular) + flLightColor;
-	if(isFog == 1){
-		fragmentColor = texture(sampl, texCoord_v) * vec4(lightColor, 1.0);
+	fragmentColor = texture(sampl, texCoord_v) * vec4(lightColor, 1.0);
+	if(isFog){
 		fragmentColor = mix(fragmentColor, vec4(fogColor,1.0), fog);
 	}
-	else
-		fragmentColor = vec4(0.5f, 1.0f, 1.0f, 1.0f);
+	//else
+		//fragmentColor = vec4(0.5f, 1.0f, 1.0f, 1.0f);
 }
