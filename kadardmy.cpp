@@ -74,6 +74,7 @@ bool ROTATION_FLAG = true;
 bool SUN_MOTION_FLAG = true;
 bool OVERALAY_FLAG = false;
 float CAMERA_SPEED = 0.1f;
+int ACCELERATION = 5;
 
 float delayFrame;
 float lastFrame;
@@ -118,6 +119,7 @@ struct StateInfo {
 	bool fog;
 	int fixedCameraPos;
 	float sensetivity;
+	float cameraSpeed;
 } stateInfo;
 
 void loadDefaultShader() {
@@ -154,9 +156,11 @@ void loadDefaultShader() {
 	commonShaderProgram.locations.cameraPos = glGetUniformLocation(commonShaderProgram.program, "cameraPos");
 	commonShaderProgram.locations.cameraDirection = glGetUniformLocation(commonShaderProgram.program, "cameraDirection");
 	commonShaderProgram.locations.isFog = glGetUniformLocation(commonShaderProgram.program, "isFog");
+	CHECK_GL_ERROR();
 
 	assert(commonShaderProgram.locations.PVMmatrix != -1);
 	assert(commonShaderProgram.locations.position != -1);
+	//assert(commonShaderProgram.locations.isFog != -1);
 	// ...
 	commonShaderProgram.initialized = true;
 }
@@ -467,13 +471,13 @@ void drawScene(void)
 	projectionMatrix = glm::perspective(glm::radians(60.0f), float(glutGet(GLUT_WINDOW_WIDTH)) / float(glutGet(GLUT_WINDOW_HEIGHT)), 0.1f, 100.0f);
 	for (ObjectInstance* object : objects) {   // for (auto object : objects) {
 		if (object != nullptr)
-			object->draw(viewMatrix, projectionMatrix, glm::vec3(1.0f, 1.0f, 1.0f), sunPos, cameraPosGlobal, cameraLook);
+			object->draw(viewMatrix, projectionMatrix, glm::vec3(1.0f, 1.0f, 1.0f), sunPos, cameraPosGlobal, cameraLook, stateInfo.fog);
 	}
 	sun->draw(viewMatrix, projectionMatrix);
 
 	glUniform1i(commonShaderProgram.locations.sampl, 0);
 	glActiveTexture(GL_TEXTURE0);
-
+	CHECK_GL_ERROR();
 	if (!stateInfo.fog) {
 		drawSkybox();
 	}
@@ -510,6 +514,7 @@ void reshapeCb(int newWidth, int newHeight) {
 	// window and projection.
 
 	// glViewport(...);
+	glViewport(0, 0, newWidth, newHeight);
 };
 
 // -----------------------  Keyboard ---------------------------------
@@ -534,7 +539,7 @@ void keyboardCb(unsigned char keyPressed, int mouseX, int mouseY) {
 			glutLeaveMainLoop();
 			exit(EXIT_SUCCESS);
 			break;
-		case 'c'://c
+		case 'c':
 			std::cout << "C pressed" << std::endl;
 			ROTATION_FLAG = !ROTATION_FLAG;
 			break;
@@ -545,11 +550,16 @@ void keyboardCb(unsigned char keyPressed, int mouseX, int mouseY) {
 
 		case 'f':
 			stateInfo.fog = !stateInfo.fog;
+			//glUniform1i(commonShaderProgram.locations.isFog, stateInfo.fog);
+			break;
 		default:
 			break;
 	}
 	keys[keyPressed] = true;
-	
+	if (glutGetModifiers() == GLUT_ACTIVE_SHIFT) {
+		std::cout << "shift pressed" << std::endl;
+		CAMERA_SPEED *= ACCELERATION;
+	}
 }
 
 // Called whenever a key on the keyboard was released. The key is given by
@@ -562,6 +572,12 @@ void keyboardCb(unsigned char keyPressed, int mouseX, int mouseY) {
  */
 void keyboardUpCb(unsigned char keyReleased, int mouseX, int mouseY) {
 	keys[keyReleased] = false;
+
+	switch (keyReleased)
+	{
+		default:
+			break;
+	}
 }
 
 //
@@ -705,12 +721,18 @@ void timerCb(int)
 			cameraPos.z > stateInfo.worldBorderZ || cameraPos.z < -stateInfo.worldBorderZ)
 			cameraPos += direction;
 	}
+	
 
 	// and plan a new event
 	glutTimerFunc(33, timerCb, 0);
 
 	// create display event
 	glutPostRedisplay();
+}
+
+void initMenu() {
+	menuBar = TwNewBar("Menu");
+	TwDefine("Menu size='240 420' color='20 20 20' fontsize=3");
 }
 
 
@@ -740,7 +762,7 @@ void initApplication() {
 		objects.push_back(new Cube(i, &commonShaderProgram, glm::vec3(0.0f, 2.5f, 2.5f), "data/cubeTriangulated.obj"));
 	}*/
 
-	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, 2.5f, 0.0f), "data/car.obj"));
+	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, 2.5f, 0.0f)));
 	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, 2.5f, 2.5f)));
 	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, 2.5f, -2.5f)));
 	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(-2.5f, 0.0f, 0.0f)));
@@ -753,6 +775,8 @@ void initApplication() {
 	// init your Application
 	// - setup the initial application state
 	characterDraw = new CharactersDraw(&textShaderProgram);
+
+	initMenu();
 }
 
 /**
@@ -813,9 +837,6 @@ int main(int argc, char** argv) {
 	glutIgnoreKeyRepeat(true);
 	TwGLUTModifiersFunc(glutGetModifiers);
 	//texture = pgr::createTexture(TEST_Texture);
-		 
-	menuBar = TwNewBar("Menu");
-	TwDefine("Menu size='240 420' color='20 20 20' fontsize=3");
 
 
 #ifndef SKELETON // @task_1_0

@@ -1,42 +1,56 @@
 #include <iostream>
 #include "cube.h"
 
-const char* TEST_Texture = "data/CarTexture.png";
+const char* TEST_Texture = "data/texture_test_small.jpg";
 
 void Cube::update(float elapsedTime, const glm::mat4* parentModelMatrix) {
 	
 	ObjectInstance::update(elapsedTime, parentModelMatrix);
 }
 
-void Cube::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix, const glm::vec3 light, const glm::vec3 lightPos, const glm::vec3 cameraPos, const glm::vec3 cameraDirection)
+void Cube::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix, const glm::vec3 light, const glm::vec3 lightPos, const glm::vec3 cameraPos, const glm::vec3 cameraDirection, const bool isFog)
 {
 	/*position = countPositionOnCurve(tGlobal);
 	tGlobal += 0.05f;*/
 
 
 	if (initialized && (shaderProgram != nullptr)) {
+		CHECK_GL_ERROR();
 		glUseProgram(shaderProgram->program);
 
 		glm::mat4 model = glm::translate(globalModelMatrix, position);
 		glUniformMatrix4fv(shaderProgram->locations.PVMmatrix, 1, GL_FALSE, glm::value_ptr(projectionMatrix * viewMatrix * model));
+		CHECK_GL_ERROR();
 
 		glUniformMatrix4fv(shaderProgram->locations.model, 1, GL_FALSE, glm::value_ptr(model));
+		CHECK_GL_ERROR();
 		//flashlight
-		glUniform1f(shaderProgram->locations.flashlightAngle, 10.0f);
+		glUniform1f(shaderProgram->locations.flashlightAngle, glm::radians(20.0f));
+		CHECK_GL_ERROR();
 		//TODO change to another color than light
 		glUniform3f(shaderProgram->locations.flashlightColor, light.x, light.y, light.z);
+		CHECK_GL_ERROR();
 		//glUniform3f(shaderProgram->locations.flashlightPos, lightPos.x, lightPos.y, lightPos.z);
 
 		glUniform3f(shaderProgram->locations.light, light.x, light.y, light.z);
+		CHECK_GL_ERROR();
 		glUniform3f(shaderProgram->locations.lightPos, lightPos.x, lightPos.y, lightPos.z);
+		CHECK_GL_ERROR();
 		glUniform3f(shaderProgram->locations.cameraPos, cameraPos.x, cameraPos.y, cameraPos.z);
+		CHECK_GL_ERROR();
 		glUniform3f(shaderProgram->locations.cameraDirection, cameraDirection.x, cameraDirection.y, cameraDirection.z);
-		glUniform1i(shaderProgram->locations.isFog, true);
+		CHECK_GL_ERROR();
+		glUniform1i(shaderProgram->locations.isFog, 1);
+		CHECK_GL_ERROR();
 
 		glActiveTexture(GL_TEXTURE0);
+		CHECK_GL_ERROR();
 		glBindTexture(GL_TEXTURE_2D, geometry->texture);
+		CHECK_GL_ERROR();
 		glBindVertexArray(geometry->vertexArrayObject);
+		CHECK_GL_ERROR();
 		glDrawArrays(GL_TRIANGLES, 0, geometry->numTriangles*3);
+		CHECK_GL_ERROR();
 		glBindVertexArray(0);
 	}
 	else {
@@ -220,7 +234,7 @@ Cube::Cube(ShaderProgram* shdrPrg, const glm::vec3 pos, std::string objName) : O
 
 	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, geometry->elementBufferObject);
 	//&(geometry->vertices[0])
-	glBufferData(GL_ARRAY_BUFFER, geometry->vertices.size() * sizeof(float), &(geometry->vertices[0]), GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, geometry->vertices.size() * sizeof(float), (vertices), GL_STATIC_DRAW);
 	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, geometry->indexes.size() * sizeof(unsigned int), &(geometry->indexes[0]), GL_STATIC_DRAW);
 
 	if ((shaderProgram != nullptr) && shaderProgram->initialized && (shaderProgram->locations.position != -1) && (shaderProgram->locations.PVMmatrix != -1)) {

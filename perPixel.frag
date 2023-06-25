@@ -40,21 +40,22 @@ void calculateFog(){
 
 void main() {
 	flashlightPos = cameraPos;
+	vec3 flashlightDirection = normalize(cameraDirection);
 	vec3 normal = normalize(normals_v);
 
+	vec3 L = normalize(flashlightPos - fragmentPos);
+	vec3 R = reflect(-L, normal);
+	vec3 V = normalize(cameraPos - fragmentPos);
 	//calculate flashlight
-	vec3 flashlightDirection = normalize(cameraPos - fragmentPos);
-	float spec = pow(max(dot(flashlightDirection, reflect(-flashlightDirection, normal)), 0.0), 1);
-	float diff = max(dot(normal, flashlightDirection), 0.0);
+	float spec = pow(max(dot(V, R), 0.0), 32.0);
+	float diff = max(dot(normal, L), 0.0);
 
 	vec3 ambient = ambientS*flashlightColor;
 	vec3 specular = specularS * spec * flashlightColor;
 	vec3 difuse = diff * flashlightColor;
 
 	vec3 flLightColor = (ambient + difuse + specular);
-	float dt = dot(cameraDirection, -flashlightDirection); 
-	float bottom = length(cameraDirection) * length(flashlightDirection);
-	if(abs(acos(dt/bottom)) > flashlightAngle)
+	if(abs(acos(dot(flashlightDirection, -L))) > flashlightAngle)
 		flLightColor = vec3(0.0f);
 	//float tmp = max(0.0, dot(-flashlightDirection, cameraDirection));
 	//if(tmp > 0.90){
@@ -76,7 +77,10 @@ void main() {
 	calculateFog();
 
 	vec3 lightColor = (ambient + difuse + specular) + flLightColor;
-	fragmentColor = texture(sampl, texCoord_v) * vec4(flLightColor, 1.0);
-	//fragmentColor = mix(fragmentColor, vec4(fogColor,1.0), fog);
-	//fragmentColor = vec4(0.5f, 1.0f, 1.0f, 1.0f);
+	if(isFog == 1){
+		fragmentColor = texture(sampl, texCoord_v) * vec4(lightColor, 1.0);
+		fragmentColor = mix(fragmentColor, vec4(fogColor,1.0), fog);
+	}
+	else
+		fragmentColor = vec4(0.5f, 1.0f, 1.0f, 1.0f);
 }

@@ -134,14 +134,14 @@ public:
 		}
 	}
 
-	virtual void draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix, const glm::vec3 light, const glm::vec3 lightPos, const glm::vec3 cameraPos, const glm::vec3 cameraDirection) {
+	virtual void draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix, const glm::vec3 light, const glm::vec3 lightPos, const glm::vec3 cameraPos, const glm::vec3 cameraDirection, const bool isFog) {
 		// draw instance geometry using globalModelMatrix
 		// ...
 
 		// process all children
 		for (ObjectInstance* child : children) {   //for (auto child : children) {
 			if (child != nullptr)
-				child->draw(viewMatrix, projectionMatrix, light, lightPos, cameraPos, cameraDirection);
+				child->draw(viewMatrix, projectionMatrix, light, lightPos, cameraPos, cameraDirection, isFog);
 		}
 	}
 
