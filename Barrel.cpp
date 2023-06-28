@@ -227,7 +227,7 @@ void Sun::changePosition(const glm::vec3 pos) {
 	position = pos;
 }
 
-void Sun::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix)
+void Sun::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix, const glm::vec3 cameraPos, const glm::vec3 cameraDirection, const bool isFog)
 {
 	if (initialized && (shaderProgram != nullptr)) {
 		glUseProgram(shaderProgram->program);
@@ -239,6 +239,11 @@ void Sun::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix)
 		glBindVertexArray(geometry->vertexArrayObject);
 		glDrawArrays(GL_TRIANGLES, 0, geometry->numTriangles * 3);
 		glBindVertexArray(0);
+
+		for (ObjectInstance* child : children) {   //for (auto child : children) {
+			if (child != nullptr)
+				child->draw(viewMatrix, projectionMatrix, glm::vec3(1.0f), position, cameraPos, cameraDirection, isFog);
+		}
 	}
 	else {
 		std::cerr << "Sun::draw(): Can't draw, cube not initialized properly!" << std::endl;
@@ -457,8 +462,11 @@ void Terrain::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatri
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, geometry->texture);
 		glBindVertexArray(geometry->vertexArrayObject);
-		glDrawArrays(GL_TRIANGLES, 0, geometry->numTriangles * 3);
-		glBindVertexArray(0);
+
+		for (int i = 0; i < height*2 - 1; i++) {
+			glDrawElements(GL_TRIANGLE_STRIP, width*4, GL_UNSIGNED_INT, (void*)(width * 4 * i * sizeof(unsigned int)));
+		}
+		//glBindVertexArray(0);
 
 		//glm::mat4 model = glm::translate(globalModelMatrix, position);
 		glUniformMatrix4fv(shaderProgram->locations.PVMmatrix, 1, GL_FALSE, glm::value_ptr(projectionMatrix * viewMatrix * globalModelMatrix));
@@ -476,15 +484,15 @@ void Terrain::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatri
 		glUniform1i(shaderProgram->locations.isFog, isFog);
 		CHECK_GL_ERROR();
 
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, geometry->texture);
+		//glActiveTexture(GL_TEXTURE0);
+		/*glBindTexture(GL_TEXTURE_2D, geometry->texture);
 		glBindVertexArray(geometry->vertexArrayObject);
-		glDrawArrays(GL_TRIANGLES, 0, geometry->numTriangles * 3);
+		glDrawArrays(GL_TRIANGLES, 0, geometry->numTriangles * 3);*/
 		glBindVertexArray(0);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	}
 	else {
-		std::cerr << "Cube::draw(): Can't draw, cube not initialized properly!" << std::endl;
+		std::cerr << "Terrain::draw(): Can't draw, cube not initialized properly!" << std::endl;
 	}
 }
 
@@ -502,8 +510,8 @@ void Terrain::generateTerrain() {
 	// indexes
 	for (int i = 0; i < (height*2)-1; i++) {
 		for (int j = 0; j < width*2; j++) {
-			indexes.push_back(i*width + j);
-			indexes.push_back((i+1)*width + j);
+			indexes.push_back(i*width*2 + j);
+			indexes.push_back((i+1)*width*2 + j);
 		}
 	}
 	
@@ -517,7 +525,7 @@ void Terrain::generateTerrain() {
 	}
 
 	// textures
-	float u = 0, v = 0, offset = 0.01;
+	float u = 0, v = 0, offset = 0.1;
 	for (int i = -height; i < height; i++) {
 		if (v > 511.0) {
 			v = 0;
@@ -537,7 +545,7 @@ void Terrain::generateTerrain() {
 	geometry->vertices.insert(geometry->vertices.end(), vertices.begin(), vertices.end());
 	geometry->vertices.insert(geometry->vertices.end(), normals.begin(), normals.end());
 	geometry->vertices.insert(geometry->vertices.end(), textures.begin(), textures.end());
-	geometry->numTriangles = indexes.size();
+	geometry->numTriangles = vertices.size() / 3;
 }
 
 Terrain::Terrain(ShaderProgram* shdrPrg, int h, int w) : ObjectInstance(shdrPrg)
@@ -564,17 +572,17 @@ Terrain::Terrain(ShaderProgram* shdrPrg, int h, int w) : ObjectInstance(shdrPrg)
 	glGenBuffers(1, &geometry->elementBufferObject);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, geometry->elementBufferObject);
 
-	glBufferData(GL_ARRAY_BUFFER, geometry->vertices.size() * sizeof(float), &(vertices[0]), GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, geometry->vertices.size() * sizeof(float), &(geometry->vertices[0]), GL_STATIC_DRAW);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexes.size() * sizeof(unsigned), &(indexes[0]), GL_STATIC_DRAW);
 	if ((shaderProgram != nullptr) && shaderProgram->initialized && (shaderProgram->locations.position != -1) && (shaderProgram->locations.PVMmatrix != -1)) {
 		glEnableVertexAttribArray(shaderProgram->locations.position);
 		glVertexAttribPointer(shaderProgram->locations.position, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
 
 		glEnableVertexAttribArray(shaderProgram->locations.normals);
-		glVertexAttribPointer(shaderProgram->locations.normals, 3, GL_FLOAT, GL_FALSE, 0, (void*)(geometry->numTriangles * 3 * 3 * sizeof(float)));
+		glVertexAttribPointer(shaderProgram->locations.normals, 3, GL_FLOAT, GL_FALSE, 0, (void*)(geometry->numTriangles * 3 * sizeof(float)));
 
 		glEnableVertexAttribArray(shaderProgram->locations.texture);
-		glVertexAttribPointer(shaderProgram->locations.texture, 2, GL_FLOAT, GL_FALSE, 0, (void*)(geometry->numTriangles * 3 * 3 * 2 * sizeof(float)));
+		glVertexAttribPointer(shaderProgram->locations.texture, 2, GL_FLOAT, GL_FALSE, 0, (void*)(geometry->numTriangles * 3 * 2 * sizeof(float)));
 
 		glBindTexture(GL_TEXTURE_2D, geometry->texture);
 		initialized = true;

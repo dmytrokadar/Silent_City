@@ -52,6 +52,11 @@ void Cube::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix, 
 		glDrawArrays(GL_TRIANGLES, 0, geometry->numTriangles*3);
 		CHECK_GL_ERROR();
 		glBindVertexArray(0);
+
+		for (ObjectInstance* child : children) {   //for (auto child : children) {
+			if (child != nullptr)
+				child->draw(viewMatrix, projectionMatrix, light, lightPos, cameraPos, cameraDirection, isFog);
+		}
 	}
 	else {
 		std::cerr << "Cube::draw(): Can't draw, cube not initialized properly!" << std::endl;

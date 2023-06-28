@@ -97,6 +97,10 @@ public:
 	ObjectInstance(ShaderProgram* shdrPrg = nullptr) : geometry(nullptr), shaderProgram(shdrPrg) {}
 	~ObjectInstance() {}
   
+	virtual void addChildren(ObjectInstance *oi) {
+		children.push_back(oi);
+	}
+
 	/**
 	* \brief Recalculates the global matrix and updates all children.
 	*   Derived classes should also call this method (using ObjectInstance::update()).

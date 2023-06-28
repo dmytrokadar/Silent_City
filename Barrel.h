@@ -26,7 +26,7 @@ public:
 
 	void update(float elapsedTime, const glm::mat4* parentModelMatrix) override;
 	void changePosition(const glm::vec3 pos);
-	void draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix) override;
+	void draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix, const glm::vec3 cameraPos, const glm::vec3 cameraDirection, const bool isFog);
 
 private:
 	glm::vec3 position;

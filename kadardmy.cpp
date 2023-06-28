@@ -205,10 +205,10 @@ void loadBannerShader() {
 	};
 
 	static const float screenRectangle[] = {
-		-1.0f,  0.15f, 0.0f, 0.0f, 1.0f,
-		  -1.0f, -0.15f, 0.0f, 0.0f, 0.0f,
-		   1.0f,  0.15f, 0.0f, 3.0f, 1.0f,
-		   1.0f, -0.15f, 0.0f, 3.0f, 0.0f
+		-1.0f,  1.0f,
+		1.0f, 1.0f,
+		1.0f, -1.0f,
+		-1.0f, -1.0f
 	};
 
 	bannerShaderProgram.program = pgr::createProgram(shaders);
@@ -220,14 +220,16 @@ void loadBannerShader() {
 	bannerShaderProgram.locations.PVMmatrix = glGetUniformLocation(bannerShaderProgram.program, "PVM");
 	bannerShaderProgram.locations.model = glGetUniformLocation(bannerShaderProgram.program, "model");
 	bannerShaderProgram.locations.sampl = glGetUniformLocation(bannerShaderProgram.program, "texSampler");
-	bannerShaderProgram.locations.light = glGetUniformLocation(bannerShaderProgram.program, "light");
-	bannerShaderProgram.locations.lightPos = glGetUniformLocation(bannerShaderProgram.program, "lightPos");
-	bannerShaderProgram.locations.cameraPos = glGetUniformLocation(bannerShaderProgram.program, "cameraPos");
+	//bannerShaderProgram.locations.light = glGetUniformLocation(bannerShaderProgram.program, "light");
+	//bannerShaderProgram.locations.lightPos = glGetUniformLocation(bannerShaderProgram.program, "lightPos");
+	//bannerShaderProgram.locations.cameraPos = glGetUniformLocation(bannerShaderProgram.program, "cameraPos");
 
 	assert(bannerShaderProgram.locations.PVMmatrix != -1);
 	assert(bannerShaderProgram.locations.position != -1);
 	// ...
 	bannerShaderProgram.initialized = true;
+
+	bloodGeometry = new ObjectGeometry;
 
 	// texture setup
 	glActiveTexture(GL_TEXTURE3);
@@ -380,7 +382,7 @@ void loadShaderPrograms()
 	loadTextShader();
 	loadSkybox();
 	loadSunShader();
-	//loadBannerShader();
+	loadBannerShader();
 }
 
 /**
@@ -412,11 +414,13 @@ void drawSkybox() {
 }
 
 void drawBanner() {
-	glBindVertexArray(bloodGeometry->vertexArrayObject);
 	glUseProgram(bannerShaderProgram.program);
-	glActiveTexture(GL_TEXTURE3);
-	glBindTexture(GL_TEXTURE_2D, bloodGeometry->texture);
 	glBindVertexArray(bloodGeometry->vertexArrayObject);
+	glActiveTexture(GL_TEXTURE3);
+	CHECK_GL_ERROR();
+	glBindTexture(GL_TEXTURE_2D, bloodGeometry->texture);
+	CHECK_GL_ERROR();
+	//glBindVertexArray(bloodGeometry->vertexArrayObject);
 	CHECK_GL_ERROR();
 
 	glUniformMatrix4fv(bannerShaderProgram.locations.PVMmatrix, 1, GL_FALSE, glm::value_ptr(glm::inverse(projectionMatrix * viewMatrix * glm::mat4(1.0f))));
@@ -458,7 +462,9 @@ void drawScene(void)
 		//std::cout << glutGet(GLUT_ELAPSED_TIME) << std::endl;
 
 		cameraPosGlobal = glm::vec3(camX / 2, 3.0, camZ / 2);
-		viewMatrix = glm::lookAt(glm::vec3(camX / 2, 3.0, camZ / 2), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
+		cameraLook = glm::vec3(0.0f) - cameraPosGlobal;
+		cameraLook = normalize(cameraLook);
+		viewMatrix = glm::lookAt(cameraPosGlobal, cameraLook, glm::vec3(0.0, 1.0, 0.0));
 	}
 	else {
 		direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
@@ -474,7 +480,7 @@ void drawScene(void)
 		if (object != nullptr)
 			object->draw(viewMatrix, projectionMatrix, glm::vec3(1.0f, 1.0f, 1.0f), sunPos, cameraPosGlobal, cameraLook, stateInfo.fog);
 	}
-	sun->draw(viewMatrix, projectionMatrix);
+	sun->draw(viewMatrix, projectionMatrix, cameraPosGlobal, cameraLook, stateInfo.fog);
 	terrain->draw(viewMatrix, projectionMatrix, glm::vec3(1.0f, 1.0f, 1.0f), sunPos, cameraPosGlobal, cameraLook, stateInfo.fog);
 
 	glUniform1i(commonShaderProgram.locations.sampl, 0);
@@ -483,7 +489,9 @@ void drawScene(void)
 	if (!stateInfo.fog) {
 		drawSkybox();
 	}
-	characterDraw->draw("test Text", 100.0f, 100.0f, 1.0f, glm::vec3(1.0f));
+	else {
+		characterDraw->draw("test Text", 100.0f, 100.0f, 1.0f, glm::vec3(1.0f));
+	}
 	//drawBanner();
 }
 
@@ -684,6 +692,8 @@ void timerCb(int)
 		if (object != nullptr)
 			object->update(elapsedTime, &sceneRootMatrix);
 	}
+
+	sun->update(elapsedTime, &sceneRootMatrix);
 #endif // task_1_0
 
 	glm::vec3 direction = CAMERA_SPEED * cameraLook;
@@ -747,7 +757,7 @@ void initApplication() {
 	// init OpenGL
 	// - all programs (shaders), buffers, textures, ...
 	//init parameters
-	stateInfo.fog = true;
+	stateInfo.fog = false;
 	stateInfo.worldBorderX = 50;
 	stateInfo.worldBorderY = 2000;
 	stateInfo.worldBorderZ = 50;
@@ -759,7 +769,7 @@ void initApplication() {
 	//glUniform1i(commonShaderProgram.locations.sampl, 0);
 
 	//objects.push_back(new Triangle(&commonShaderProgram));
-	objects.push_back(new Cube(&commonShaderProgram));
+	//objects.push_back(new Cube(&commonShaderProgram));
 	/*for (float i = 0; i < 3.9; i += 0.1) {
 		objects.push_back(new Cube(i, &commonShaderProgram, glm::vec3(0.0f, 2.5f, 2.5f), "data/cubeTriangulated.obj"));
 	}*/
@@ -771,6 +781,7 @@ void initApplication() {
 	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(-2.5f, -2.5f, 0.0f)));
 	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, -2.5f, 0.0f)));
 	sun = new Sun(&sunShaderProgram, sunPos);
+	sun->addChildren(new Cube(&commonShaderProgram, glm::vec3(3.0f, 3.0f, 3.0f)));
 	terrain = new Terrain(&commonShaderProgram, stateInfo.worldBorderZ, stateInfo.worldBorderX);
 	// objects.push_back(new SingleMesh(&commonShaderProgram));
 	//(objects[0])->loadObjFromFile("data/cubeTriangulated.obj");
