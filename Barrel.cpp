@@ -463,9 +463,6 @@ void Terrain::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatri
 		glBindTexture(GL_TEXTURE_2D, geometry->texture);
 		glBindVertexArray(geometry->vertexArrayObject);
 
-		for (int i = 0; i < height*2 - 1; i++) {
-			glDrawElements(GL_TRIANGLE_STRIP, width*4, GL_UNSIGNED_INT, (void*)(width * 4 * i * sizeof(unsigned int)));
-		}
 		//glBindVertexArray(0);
 
 		//glm::mat4 model = glm::translate(globalModelMatrix, position);
@@ -477,13 +474,16 @@ void Terrain::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatri
 		glUniform3f(shaderProgram->locations.flashlightColor, light.x, light.y, light.z);
 		//glUniform3f(shaderProgram->locations.flashlightPos, lightPos.x, lightPos.y, lightPos.z);
 
-		glUniform3f(shaderProgram->locations.light, light.x, light.y, light.z);
+		/*glUniform3f(shaderProgram->locations.light, light.x, light.y, light.z);
 		glUniform3f(shaderProgram->locations.lightPos, lightPos.x, lightPos.y, lightPos.z);
 		glUniform3f(shaderProgram->locations.cameraPos, cameraPos.x, cameraPos.y, cameraPos.z);
 		glUniform3f(shaderProgram->locations.cameraDirection, cameraDirection.x, cameraDirection.y, cameraDirection.z);
-		glUniform1i(shaderProgram->locations.isFog, isFog);
+		glUniform1i(shaderProgram->locations.isFog, isFog);*/
 		CHECK_GL_ERROR();
 
+		for (int i = 0; i < height*2 - 1; i++) {
+			glDrawElements(GL_TRIANGLE_STRIP, width*4, GL_UNSIGNED_INT, (void*)(width * 4 * i * sizeof(unsigned int)));
+		}
 		//glActiveTexture(GL_TEXTURE0);
 		/*glBindTexture(GL_TEXTURE_2D, geometry->texture);
 		glBindVertexArray(geometry->vertexArrayObject);

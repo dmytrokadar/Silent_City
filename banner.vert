@@ -13,13 +13,14 @@ float decay = 0.05;
 void main() {
 
   // vertex position after the projection (gl_Position is predefined output variable)
-  gl_Position = PVM * vec4(position, 1.0, 1.0);   // outgoing vertex in clip coordinates
+  gl_Position = vec4(position, 0.0, 1.0);   // outgoing vertex in clip coordinates
 
-  float localTime = time * decay;
+  //float localTime = time * decay;
   // localTime = 0;
 
-  vec2 offset = vec2((floor(localTime) - localTime) * 4 + 1.0, 0.0);
+  //vec2 offset = vec2((floor(localTime) - localTime) * 4 + 1.0, 0.0);
 
   // outputs entering the fragment shader
-  texCoord_v = texCoord;
+  //texCoord_v =  texCoord;
+  texCoord_v = (position + 1)/2;
 }

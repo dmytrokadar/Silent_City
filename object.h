@@ -35,10 +35,18 @@ typedef struct _ShaderProgram {
 		//light unitforms
 		GLint light;
 		GLint lightPos;
+		GLint dirLightVec;
+		GLint dirLightColor;
 		GLint textColor;
 		GLint cameraPos;
 		GLint cameraDirection;
 		GLint isFog;
+		//material uniform
+		GLint ambient;
+		GLint diffuse;
+		GLint specular;
+		GLint shininess;
+
 	} locations;
 
 	// ...

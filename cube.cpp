@@ -32,7 +32,7 @@ void Cube::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix, 
 		CHECK_GL_ERROR();
 		//glUniform3f(shaderProgram->locations.flashlightPos, lightPos.x, lightPos.y, lightPos.z);
 
-		glUniform3f(shaderProgram->locations.light, light.x, light.y, light.z);
+		/*glUniform3f(shaderProgram->locations.light, light.x, light.y, light.z);
 		CHECK_GL_ERROR();
 		glUniform3f(shaderProgram->locations.lightPos, lightPos.x, lightPos.y, lightPos.z);
 		CHECK_GL_ERROR();
@@ -41,7 +41,7 @@ void Cube::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix, 
 		glUniform3f(shaderProgram->locations.cameraDirection, cameraDirection.x, cameraDirection.y, cameraDirection.z);
 		CHECK_GL_ERROR();
 		glUniform1i(shaderProgram->locations.isFog, isFog);
-		CHECK_GL_ERROR();
+		CHECK_GL_ERROR();*/
 
 		glActiveTexture(GL_TEXTURE0);
 		CHECK_GL_ERROR();
@@ -53,10 +53,10 @@ void Cube::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix, 
 		CHECK_GL_ERROR();
 		glBindVertexArray(0);
 
-		for (ObjectInstance* child : children) {   //for (auto child : children) {
-			if (child != nullptr)
-				child->draw(viewMatrix, projectionMatrix, light, lightPos, cameraPos, cameraDirection, isFog);
-		}
+		//for (ObjectInstance* child : children) {   //for (auto child : children) {
+		//	if (child != nullptr)
+		//		child->draw(viewMatrix, projectionMatrix, light, lightPos, cameraPos, cameraDirection, isFog);
+		//}
 	}
 	else {
 		std::cerr << "Cube::draw(): Can't draw, cube not initialized properly!" << std::endl;
