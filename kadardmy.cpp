@@ -38,6 +38,7 @@
 #include "triangle.h"
 #include "cube.h"
 #include "Barrel.h"
+#include "Space.h"
 #include "CharactersDraw.h"
 #include "singlemesh.h"
 #include <AntTweakBar.h>
@@ -52,7 +53,9 @@ constexpr char WINDOW_TITLE[] = "PGR: Application Skeleton";
 // objects
 ObjectList objects;
 Sun* sun;
+Car* car;
 Terrain* terrain;
+Animation* movie;
 
 // utilities
 CharactersDraw* characterDraw;
@@ -182,8 +185,6 @@ void loadDefaultShader() {
 void loadTextShader() {
 	// initializing default shader
 	GLuint shaders[] = {
-		/*pgr::createShaderFromSource(GL_VERTEX_SHADER, vertexShaderSrc),
-		pgr::createShaderFromSource(GL_FRAGMENT_SHADER, fragmentShaderSrc),*/
 		pgr::createShaderFromFile(GL_VERTEX_SHADER, "text.vert"),
 		pgr::createShaderFromFile(GL_FRAGMENT_SHADER, "text.frag"),
 
@@ -470,7 +471,6 @@ void drawScene(void)
 		sun->changePosition(sunPos);
 	}
 
-
 	if (ROTATION_FLAG) {
 		float camX = sin(time) * radius;
 		float camZ = cos(time) * radius;
@@ -518,14 +518,18 @@ void drawScene(void)
 
 	glUseProgram(0);
 	projectionMatrix = glm::perspective(glm::radians(60.0f), float(glutGet(GLUT_WINDOW_WIDTH)) / float(glutGet(GLUT_WINDOW_HEIGHT)), 0.1f, 100.0f);
-	terrain->draw(viewMatrix, projectionMatrix, glm::vec3(1.0f, 1.0f, 1.0f), sunPos, cameraPosGlobal, cameraLook, stateInfo.fog);
-	for (ObjectInstance* object : objects) {   // for (auto object : objects) {
-		if (object != nullptr)
-			object->draw(viewMatrix, projectionMatrix, glm::vec3(1.0f, 1.0f, 1.0f), sunPos, cameraPosGlobal, cameraLook, stateInfo.fog);
-	}
+	
+	//TODO rozkomentyty
+	//terrain->draw(viewMatrix, projectionMatrix, glm::vec3(1.0f, 1.0f, 1.0f), sunPos, cameraPosGlobal, cameraLook, stateInfo.fog);
+	//for (ObjectInstance* object : objects) {   // for (auto object : objects) {
+	//	if (object != nullptr)
+	//		object->draw(viewMatrix, projectionMatrix, glm::vec3(1.0f, 1.0f, 1.0f), sunPos, cameraPosGlobal, cameraLook, stateInfo.fog);
+	//}
 	sun->draw(viewMatrix, projectionMatrix, cameraPosGlobal, cameraLook, stateInfo.fog);
+	car->draw(viewMatrix, projectionMatrix, glm::vec3(1.0f, 1.0f, 1.0f), sunPos, cameraPosGlobal, cameraLook, stateInfo.fog);
 
 	glUniform1i(commonShaderProgram.locations.sampl, 0);
+	movie->draw(viewMatrix, projectionMatrix, glm::vec3(1.0f, 1.0f, 1.0f), sunPos, cameraPosGlobal, cameraLook, stateInfo.fog);
 	glActiveTexture(GL_TEXTURE0);
 	CHECK_GL_ERROR();
 	if (!stateInfo.fog) {
@@ -554,9 +558,9 @@ void displayCb() {
 
 	glDisable(GL_BLEND);
 
-	//if (stateInfo.menu) {
+	if (stateInfo.menu) {
 		TwDraw();
-	//}
+	}
 	glutSwapBuffers();
 }
 
@@ -745,7 +749,10 @@ void timerCb(int)
 			object->update(elapsedTime, &sceneRootMatrix);
 	}
 
-	sun->update(elapsedTime, &sceneRootMatrix);
+	if(SUN_MOTION_FLAG)
+		sun->update(elapsedTime, &sceneRootMatrix);
+	car->update(elapsedTime, &sceneRootMatrix);
+	movie->update(elapsedTime, &sceneRootMatrix);
 #endif // task_1_0
 
 	glm::vec3 direction = CAMERA_SPEED * cameraLook;
@@ -788,7 +795,7 @@ void timerCb(int)
 	
 
 	// and plan a new event
-	glutTimerFunc(33, timerCb, 0);
+	glutTimerFunc(16, timerCb, 0);
 
 	// create display event
 	glutPostRedisplay();
@@ -801,7 +808,8 @@ void TW_CALL bloodCB(void *p) {
 void initMenu() {
 	menuBar = TwNewBar("Menu");
 	TwDefine("Menu size='240 420' color='20 20 20' fontsize=3");
-	TwAddButton(menuBar, "Blood HUD", bloodCB, NULL, " label='Auto rotate' ");
+	//TwAddButton(menuBar, "BloodHUD", bloodCB, NULL, " label='Blood HUD' ");
+	TwAddVarRW(menuBar, "BloodHUD", TW_TYPE_BOOLCPP, &stateInfo.blood, " label='Blood HUD' ");
 }
 
 
@@ -813,16 +821,7 @@ void initMenu() {
 void initApplication() {
 	// init OpenGL
 	// - all programs (shaders), buffers, textures, ...
-	//init parameters
-	stateInfo.fog = false;
-	stateInfo.blood = false;
-	stateInfo.menu = false;
-
-	stateInfo.windowHeight = 600;
-	stateInfo.windowWidth = 800;
-	stateInfo.worldBorderX = 50;
-	stateInfo.worldBorderY = 2000;
-	stateInfo.worldBorderZ = 50;
+	
 
 	glClearColor(0.7f, 0.7f, 0.7f, 1.0f);
 	loadShaderPrograms();
@@ -843,10 +842,16 @@ void initApplication() {
 	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(-2.5f, -2.5f, 0.0f)));
 	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, -2.5f, 0.0f)));
 	sun = new Sun(&sunShaderProgram, sunPos);
-	sun->addChildren(new Cube(&commonShaderProgram, glm::vec3(3.0f, 3.0f, 3.0f)));
+	//sun->addChildren(new Cube(&commonShaderProgram, glm::vec3(3.0f, 3.0f, 3.0f)));
+	Planet* pl = new Planet(&commonShaderProgram, glm::vec3(0.0f), glm::vec3(5,1,2), 3.0f, 1.5f);
+	pl->addChildren(new Planet(&commonShaderProgram, glm::vec3(0.0f), glm::vec3(2,0, 10), 2.0f, 2.0f));
+	sun->addChildren(pl);
+	car = new Car(&commonShaderProgram, glm::vec3(4.0f, 1.5f, 2.0f));
 	terrain = new Terrain(&commonShaderProgram, stateInfo.worldBorderZ, stateInfo.worldBorderX);
 	// objects.push_back(new SingleMesh(&commonShaderProgram));
 	//(objects[0])->loadObjFromFile("data/cubeTriangulated.obj");
+
+	movie = new Animation();
 
 	// init your Application
 	// - setup the initial application state
@@ -878,6 +883,17 @@ void finalizeApplication(void) {
  * \return 0 if OK, <> elsewhere
  */
 int main(int argc, char** argv) {
+
+	//init parameters
+	stateInfo.fog = false;
+	stateInfo.blood = false;
+	stateInfo.menu = false;
+
+	stateInfo.windowHeight = 600;
+	stateInfo.windowWidth = 800;
+	stateInfo.worldBorderX = 50;
+	stateInfo.worldBorderY = 2000;
+	stateInfo.worldBorderZ = 50;
 
 	// initialize the GLUT library (windowing system)
 	glutInit(&argc, argv);

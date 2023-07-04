@@ -7,6 +7,7 @@
     <ClCompile Include="triangle.cpp" />
     <ClCompile Include="Barrel.cpp" />
     <ClCompile Include="CharactersDraw.cpp" />
+    <ClCompile Include="Space.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cube.h" />
@@ -16,6 +17,7 @@
     <ClInclude Include="Barrel.h" />
     <ClInclude Include="CharactersDraw.h" />
     <ClInclude Include="Properties.h" />
+    <ClInclude Include="Space.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Shaders">
@@ -58,6 +60,12 @@
       <Filter>Shaders</Filter>
     </None>
     <None Include="text.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="animation.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="animation.vert">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>

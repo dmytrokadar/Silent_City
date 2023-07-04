@@ -2,6 +2,7 @@
 
 #include "pgr.h"
 #include <fstream>
+#include <iostream>
 #include <sstream>
 #include <iomanip>  
 
@@ -28,6 +29,7 @@ typedef struct _ShaderProgram {
 		GLint model;
 		GLint projection;
 		GLint sampl;
+		GLint segment;
 		//flashlight uniforms
 		GLint flashlightColor;
 		GLint flashlightPos;

@@ -17,22 +17,6 @@ private:
 	bool initialized;  ///< object has the shader with defined locations
 };
 
-class Sun : public ObjectInstance
-{
-public:
-
-	Sun(ShaderProgram* shdrPrg = nullptr, const glm::vec3 pos = glm::vec3(0.0f));
-	~Sun();
-
-	void update(float elapsedTime, const glm::mat4* parentModelMatrix) override;
-	void changePosition(const glm::vec3 pos);
-	void draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix, const glm::vec3 cameraPos, const glm::vec3 cameraDirection, const bool isFog);
-
-private:
-	glm::vec3 position;
-	bool initialized;  ///< object has the shader with defined locations
-};
-
 class Terrain : public ObjectInstance
 {
 public:
@@ -52,4 +36,27 @@ private:
 	std::vector<unsigned> indexes;
 	int height;
 	int width;
+};
+
+class Animation : public ObjectInstance
+{
+public:
+
+	Animation();
+	~Animation();
+
+	void update(float elapsedTime, const glm::mat4* parentModelMatrix) override;
+	void draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix, const glm::vec3 light, const glm::vec3 lightPos, const glm::vec3 cameraPos, const glm::vec3 cameraDirection, const bool isFog) override;
+	void loadShader();
+private:
+	bool initialized;  ///< object has the shader with defined locations
+	float vertices;
+	int segment = 1;
+	float lastTime = 0;
+	std::vector<float> normals;
+	std::vector<float> textures;
+
+	glm::vec3 position;
+
+	ShaderProgram animShaderProgram;
 };

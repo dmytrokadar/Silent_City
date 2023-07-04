@@ -158,6 +158,7 @@
     <ClCompile Include="cube.cpp" />
     <ClCompile Include="singlemesh.cpp" />
     <ClCompile Include="kadardmy.cpp" />
+    <ClCompile Include="Space.cpp" />
     <ClCompile Include="triangle.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -167,9 +168,12 @@
     <ClInclude Include="object.h" />
     <ClInclude Include="Properties.h" />
     <ClInclude Include="singlemesh.h" />
+    <ClInclude Include="Space.h" />
     <ClInclude Include="triangle.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="animation.frag" />
+    <None Include="animation.vert" />
     <None Include="banner.frag" />
     <None Include="banner.vert" />
     <None Include="cube.frag" />

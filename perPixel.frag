@@ -37,7 +37,7 @@ struct Light {
 float fog = 1.0;
 float fogBegin = 5.0;
 float fogEnd = 15.0;
-float exponent = 40.0;
+float exponent = 32.0;
 float fogRange = fogEnd - fogBegin;
 
 vec3 flashlightPos;
