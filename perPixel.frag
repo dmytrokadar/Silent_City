@@ -16,6 +16,8 @@ uniform vec3 cameraPos;
 uniform vec3 cameraDirection;
 uniform bool isFog;
 
+uniform float alphaChannel;
+
 uniform vec3 dirLightVec;
 vec3 dirLightColor = vec3(1.0, 1.0, 1.0);
 
@@ -122,6 +124,8 @@ void main() {
 	if(isFog){
 		fragmentColor = mix(fragmentColor, vec4(fogColor,1.0), fog);
 	}
+
+	fragmentColor.w = alphaChannel;
 	//else
 		//fragmentColor = vec4(0.5f, 1.0f, 1.0f, 1.0f);
 }

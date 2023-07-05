@@ -30,6 +30,7 @@ typedef struct _ShaderProgram {
 		GLint projection;
 		GLint sampl;
 		GLint segment;
+		GLint alphaChannel;
 		//flashlight uniforms
 		GLint flashlightColor;
 		GLint flashlightPos;

@@ -38,6 +38,8 @@ public:
 	void makeCurve();
 	glm::vec3 countPositionOnCurve(float t);
 	glm::vec3 countDirectionOnCurve(float t, int segment);
+	glm::vec3 getCarPos();
+	glm::vec3 getCarLook();
 
 private:
 	glm::vec3 position;

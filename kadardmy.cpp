@@ -96,7 +96,6 @@ glm::vec3 sunPos = glm::vec3(4.0f, 5.0f, 0.0f);
 
 float pitch = 0, yaw = -90.0f;
 //float lastMouseX = WINDOW_WIDTH / 2, lastMouseY = WINDOW_HEIGHT / 2;
-const float sensetivity = 0.1f;
 
 glm::mat4 viewMatrix = glm::mat4(1.0f);
 glm::mat4 projectionMatrix = glm::mat4(1.0f);
@@ -122,11 +121,17 @@ struct StateInfo {
 	bool freeCamera;
 	bool fog;
 	bool blood;
+	bool drag;
+	bool dragCamera;
+	bool carCameraFlag;
+	
+	glm::vec2 mouseLastPos;
 
 	bool menu;
 
 	int fixedCameraPos;
 	float sensetivity;
+	float sensetivityDrag;
 	float cameraSpeed;
 } stateInfo;
 
@@ -151,6 +156,7 @@ void loadDefaultShader() {
 	commonShaderProgram.locations.PVMmatrix = glGetUniformLocation(commonShaderProgram.program, "PVM");
 	commonShaderProgram.locations.model = glGetUniformLocation(commonShaderProgram.program, "model");
 	commonShaderProgram.locations.sampl = glGetUniformLocation(commonShaderProgram.program, "sampl");
+	commonShaderProgram.locations.alphaChannel = glGetUniformLocation(commonShaderProgram.program, "alphaChannel");
 
 	//flashlight uniforms
 	commonShaderProgram.locations.flashlightAngle = glGetUniformLocation(commonShaderProgram.program, "flashlightAngle");
@@ -471,6 +477,7 @@ void drawScene(void)
 		sun->changePosition(sunPos);
 	}
 
+
 	if (ROTATION_FLAG) {
 		float camX = sin(time) * radius;
 		float camZ = cos(time) * radius;
@@ -481,6 +488,14 @@ void drawScene(void)
 		cameraLook = glm::vec3(0.0f) - cameraPosGlobal;
 		cameraLook = normalize(cameraLook);
 		viewMatrix = glm::lookAt(cameraPosGlobal, cameraLook, glm::vec3(0.0, 1.0, 0.0));
+	}
+	else if (stateInfo.carCameraFlag) {
+		cameraPosGlobal = car->getCarPos();
+		cameraPosGlobal.y += 2;
+		cameraLook = car->getCarLook();
+		//cameraLook = normalize(cameraLook);
+		std::cout << cameraLook.x << " " << cameraLook.y << " " << cameraLook.z << std::endl;
+		viewMatrix = glm::lookAt(cameraPosGlobal, cameraLook+cameraPosGlobal, glm::vec3(0.0, 1.0, 0.0));
 	}
 	else {
 		direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
@@ -504,6 +519,7 @@ void drawScene(void)
 	CHECK_GL_ERROR();
 	glUniform1i(commonShaderProgram.locations.isFog, stateInfo.fog);
 	CHECK_GL_ERROR();
+	glUniform1f(commonShaderProgram.locations.alphaChannel, 1);
 	float dirX = sin(time) * radius;
 	float dirY = cos(time) * radius;
 	glUniform3f(commonShaderProgram.locations.dirLightVec, -dirX, -dirY, 0.0f);
@@ -519,12 +535,11 @@ void drawScene(void)
 	glUseProgram(0);
 	projectionMatrix = glm::perspective(glm::radians(60.0f), float(glutGet(GLUT_WINDOW_WIDTH)) / float(glutGet(GLUT_WINDOW_HEIGHT)), 0.1f, 100.0f);
 	
-	//TODO rozkomentyty
-	//terrain->draw(viewMatrix, projectionMatrix, glm::vec3(1.0f, 1.0f, 1.0f), sunPos, cameraPosGlobal, cameraLook, stateInfo.fog);
-	//for (ObjectInstance* object : objects) {   // for (auto object : objects) {
-	//	if (object != nullptr)
-	//		object->draw(viewMatrix, projectionMatrix, glm::vec3(1.0f, 1.0f, 1.0f), sunPos, cameraPosGlobal, cameraLook, stateInfo.fog);
-	//}
+	terrain->draw(viewMatrix, projectionMatrix, glm::vec3(1.0f, 1.0f, 1.0f), sunPos, cameraPosGlobal, cameraLook, stateInfo.fog);
+	for (ObjectInstance* object : objects) {   // for (auto object : objects) {
+		if (object != nullptr)
+			object->draw(viewMatrix, projectionMatrix, glm::vec3(1.0f, 1.0f, 1.0f), sunPos, cameraPosGlobal, cameraLook, stateInfo.fog);
+	}
 	sun->draw(viewMatrix, projectionMatrix, cameraPosGlobal, cameraLook, stateInfo.fog);
 	car->draw(viewMatrix, projectionMatrix, glm::vec3(1.0f, 1.0f, 1.0f), sunPos, cameraPosGlobal, cameraLook, stateInfo.fog);
 
@@ -538,6 +553,10 @@ void drawScene(void)
 	else {
 		characterDraw->draw("test Text", 100.0f, 100.0f, 1.0f, glm::vec3(1.0f));
 	}
+	glUseProgram(commonShaderProgram.program);
+	glUniform1f(commonShaderProgram.locations.alphaChannel, 0.2);
+	//TODO place for transparent objects
+	glUniform1f(commonShaderProgram.locations.alphaChannel, 1);
 	if(stateInfo.blood)
 		drawBanner();
 }
@@ -618,6 +637,10 @@ void keyboardCb(unsigned char keyPressed, int mouseX, int mouseY) {
 			stateInfo.menu = !stateInfo.menu;
 			std::cout << "menu " << stateInfo.menu << std::endl;
 			break;
+		case 'z':
+			stateInfo.drag = !stateInfo.menu;
+			std::cout << "drag " << stateInfo.menu << std::endl;
+			break;
 		default:
 			break;
 	}
@@ -680,6 +703,16 @@ void specialKeyboardUpCb(int specKeyReleased, int mouseX, int mouseY) {
 void mouseCb(int buttonPressed, int buttonState, int mouseX, int mouseY) {
 	if (TwEventMouseButtonGLUT(buttonPressed, buttonState, mouseX, mouseY))
 		return;
+
+	if (buttonPressed == GLUT_LEFT_BUTTON) {
+		if (buttonState == GLUT_DOWN) {
+			stateInfo.dragCamera = true;
+			stateInfo.mouseLastPos = glm::vec2(mouseX, mouseY);
+		}
+		else {
+			stateInfo.dragCamera = false;
+		}
+	}
 }
 
 /**
@@ -691,6 +724,22 @@ void mouseCb(int buttonPressed, int buttonState, int mouseX, int mouseY) {
 void mouseMotionCb(int mouseX, int mouseY) {
 	if (TwEventMouseMotionGLUT(mouseX, mouseY))
 		return;
+
+	if (stateInfo.drag && stateInfo.dragCamera) {
+		float offsetX = mouseX - stateInfo.mouseLastPos.x;
+		float offsetY = mouseY - stateInfo.mouseLastPos.y;
+
+		offsetX *= stateInfo.sensetivityDrag;
+		offsetY *= stateInfo.sensetivityDrag;
+
+		yaw += offsetX;
+		pitch -= offsetY;
+
+		if (pitch > 89.0f)
+			pitch = 89.0f;
+		if (pitch < -89.0f)
+			pitch = -89.0f;
+	}
 }
 
 /**
@@ -699,16 +748,15 @@ void mouseMotionCb(int mouseX, int mouseY) {
  * \param mouseY mouse (cursor) Y position
  */
 void passiveMouseMotionCb(int mouseX, int mouseY) {
-
-	/*if (TwEventMouseMotionGLUT(mouseX, mouseY))
-		return;*/
+	if (TwEventMouseMotionGLUT(mouseX, mouseY))
+		return;
 
 	// mouse hovering over window
 
 	// create display event to redraw window contents if needed (and not handled in the timer callback)
 	// glutPostRedisplay();
 
-	if (!ROTATION_FLAG) {
+	if (!ROTATION_FLAG && !stateInfo.drag) {
 		//inspitation https://learnopengl.com/Getting-started/Camera
 		/*std::cout << "Mouse x: " << mouseX << std::endl;
 		std::cout << "Mouse y: " << mouseY << std::endl;*/
@@ -716,8 +764,8 @@ void passiveMouseMotionCb(int mouseX, int mouseY) {
 		float offsetX = mouseX - stateInfo.windowWidth / 2;
 		float offsetY = mouseY - stateInfo.windowHeight / 2;
 
-		offsetX *= sensetivity;
-		offsetY *= sensetivity;
+		offsetX *= stateInfo.sensetivity;
+		offsetY *= stateInfo.sensetivity;
 
 		yaw += offsetX;
 		pitch -= offsetY;
@@ -810,6 +858,7 @@ void initMenu() {
 	TwDefine("Menu size='240 420' color='20 20 20' fontsize=3");
 	//TwAddButton(menuBar, "BloodHUD", bloodCB, NULL, " label='Blood HUD' ");
 	TwAddVarRW(menuBar, "BloodHUD", TW_TYPE_BOOLCPP, &stateInfo.blood, " label='Blood HUD' ");
+	TwAddVarRW(menuBar, "CarCamera", TW_TYPE_BOOLCPP, &stateInfo.carCameraFlag, " label='Car Camera' ");
 }
 
 
@@ -888,12 +937,18 @@ int main(int argc, char** argv) {
 	stateInfo.fog = false;
 	stateInfo.blood = false;
 	stateInfo.menu = false;
+	stateInfo.drag = false;
+	stateInfo.dragCamera = false;
+	stateInfo.carCameraFlag = false;
 
 	stateInfo.windowHeight = 600;
 	stateInfo.windowWidth = 800;
 	stateInfo.worldBorderX = 50;
 	stateInfo.worldBorderY = 2000;
 	stateInfo.worldBorderZ = 50;
+
+	stateInfo.sensetivity = 0.1f;
+	stateInfo.sensetivityDrag = 0.01f;
 
 	// initialize the GLUT library (windowing system)
 	glutInit(&argc, argv);

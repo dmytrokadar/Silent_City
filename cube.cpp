@@ -692,6 +692,14 @@ glm::vec3 Car::countDirectionOnCurve(float t, int segment) {
 	return resultDir * 10.0f;
 }
 
+glm::vec3 Car::getCarPos() {
+	return position;
+}
+
+glm::vec3 Car::getCarLook() {
+	return direction;
+}
+
 Car::~Car() {
 	glDeleteVertexArrays(1, &(geometry->vertexArrayObject));
 	glDeleteBuffers(1, &(geometry->elementBufferObject));
