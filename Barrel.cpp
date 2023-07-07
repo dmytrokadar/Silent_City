@@ -377,11 +377,13 @@ Terrain::~Terrain() {
 void Animation::update(float elapsedTime, const glm::mat4* parentModelMatrix) {
 
 	ObjectInstance::update(elapsedTime, parentModelMatrix);
-	if (elapsedTime - lastTime > 0.1) {
-		segment++;
-		lastTime = elapsedTime;
-		if (segment > 75)
-			segment = 1;
+	if (play) {
+		if (elapsedTime - lastTime > 0.1) {
+			segment++;
+			lastTime = elapsedTime;
+			if (segment > 75)
+				segment = 1;
+		}
 	}
 }
 

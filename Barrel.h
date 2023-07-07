@@ -48,8 +48,10 @@ public:
 	void update(float elapsedTime, const glm::mat4* parentModelMatrix) override;
 	void draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix, const glm::vec3 light, const glm::vec3 lightPos, const glm::vec3 cameraPos, const glm::vec3 cameraDirection, const bool isFog) override;
 	void loadShader();
+	void changePlayState() {play = !play;}
 private:
 	bool initialized;  ///< object has the shader with defined locations
+	bool play = true;
 	float vertices;
 	int segment = 1;
 	float lastTime = 0;

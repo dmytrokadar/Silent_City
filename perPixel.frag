@@ -15,6 +15,7 @@ uniform vec3 lightPos;
 uniform vec3 cameraPos;
 uniform vec3 cameraDirection;
 uniform bool isFog;
+uniform float fogHeight;
 
 uniform float alphaChannel;
 
@@ -45,10 +46,22 @@ float fogRange = fogEnd - fogBegin;
 vec3 flashlightPos;
 vec3 fogColor = vec3(0.7f);
 
+//inspiration https://www.youtube.com/watch?v=BYbIs1C7rkM&t=4s;
 void calculateFog(){
+	/*float dist = length(fragmentPos - cameraPos);
+	float fogDist = dist - fogBegin;
+	fog = clamp(fogDist/fogRange, 0.0, 1.0);*/
+
+//	if(fragmentPos.y > fogHeight){
+//		fog = (0.0f);
+//		return;
+//	}
 	float dist = length(fragmentPos - cameraPos);
 	float fogDist = dist - fogBegin;
-	fog = clamp(fogDist/fogRange, 0.0, 1.0);
+	float fogDistExp = fragmentPos.y/fogHeight/2;
+	fog = exp(- fogDistExp);
+	
+	fog *= clamp(fogDist/fogRange, 0.0, 1.0);
 }
 
 void calculateLight(){

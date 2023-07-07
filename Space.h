@@ -19,6 +19,7 @@ private:
 
 	glm::vec3 axis;
 	float radius;
+	float angle;
 	glm::quat rotationQuat;
 };
 

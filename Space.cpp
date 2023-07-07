@@ -266,18 +266,19 @@ void Planet::update(float elapsedTime, const glm::mat4* parentModelMatrix) {
 	//localModelMatrix = glm::translate(glm::mat4(1.0f), position);
 
 
-	glm::mat4 tmpR = glm::rotate(glm::mat4(1.0f), glm::radians(1.5f), axis);
-	localModelMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(1.5f), axis) * localModelMatrix;
+	//glm::mat4 tmpR = glm::rotate(glm::mat4(1.0f), glm::radians(1.5f), axis);
+	//localModelMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(1.5f), axis) * localModelMatrix;
 	//glm::mat4 RotationMatrix = glm::mat4_cast(rotationQuat);
 	//localModelMatrix = glm::toMat4(rotationQuat) * localModelMatrix;
 	//rotationQuat = glm::quat(glm::radians(1.5f), axis) * rotationQuat;
+	rotationQuat = glm::angleAxis(glm::radians(angle), axis) * rotationQuat;
 	glm::mat4 tmpM = glm::mat4_cast(rotationQuat);
 
 	//ObjectInstance::update(elapsedTime, parentModelMatrix);
 	if (parentModelMatrix != nullptr)
-		globalModelMatrix = *parentModelMatrix  *localModelMatrix;
+		globalModelMatrix = *parentModelMatrix * tmpM * localModelMatrix;
 	else
-		globalModelMatrix =  localModelMatrix;
+		globalModelMatrix = tmpM * localModelMatrix;
 
 	//globalModelMatrix = glm::translate(glm::mat4(1.0f), position) * globalModelMatrix;
 
@@ -318,12 +319,13 @@ void Planet::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix
 }
 
 Planet::Planet(ShaderProgram* shdrPrg, const glm::vec3 pos, glm::vec3 axis, float radius, float angle) 
-	: ObjectInstance(shdrPrg), initialized(false), axis(axis), radius(radius)
+	: ObjectInstance(shdrPrg), initialized(false), radius(radius), angle(angle)
 {
 	geometry = new ObjectGeometry;
 	position = pos;
-	
-	rotationQuat = glm::quat(glm::radians(angle), axis);
+	this->axis = normalize(axis);
+
+	rotationQuat = glm::quat(glm::radians(angle), this->axis);
 	//this->axis = glm::normalize(glm::cross(glm::vec3(1, 2, 3), glm::vec3(0, 1, 0)));
 	glm::vec3 offset = glm::normalize(glm::cross(axis, glm::vec3(0, 1, 0)));
 	localModelMatrix = glm::translate(glm::mat4(1.0f), radius * offset) * glm::scale(glm::mat4(1.0f), glm::vec3(0.5f));

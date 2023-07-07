@@ -27,6 +27,7 @@ typedef struct _ShaderProgram {
 		// uniforms locations
 		GLint PVMmatrix;
 		GLint model;
+		GLint time;
 		GLint projection;
 		GLint sampl;
 		GLint segment;
@@ -44,6 +45,7 @@ typedef struct _ShaderProgram {
 		GLint cameraPos;
 		GLint cameraDirection;
 		GLint isFog;
+		GLint fogHeight;
 		//material uniform
 		GLint ambient;
 		GLint diffuse;

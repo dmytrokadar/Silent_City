@@ -25,10 +25,10 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="banner.vert">
+    <None Include="bannerBlood.vert">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="banner.frag">
+    <None Include="bannerBlood.frag">
       <Filter>Shaders</Filter>
     </None>
     <None Include="cube.frag">
@@ -66,6 +66,12 @@
       <Filter>Shaders</Filter>
     </None>
     <None Include="animation.vert">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="banner.vert">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="banner.frag">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>

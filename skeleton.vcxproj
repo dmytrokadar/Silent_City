@@ -176,6 +176,8 @@
     <None Include="animation.vert" />
     <None Include="banner.frag" />
     <None Include="banner.vert" />
+    <None Include="bannerBlood.frag" />
+    <None Include="bannerBlood.vert" />
     <None Include="cube.frag" />
     <None Include="cube.vert" />
     <None Include="default.frag" />
