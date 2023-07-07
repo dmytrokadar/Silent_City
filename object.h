@@ -31,6 +31,8 @@ typedef struct _ShaderProgram {
 		GLint projection;
 		GLint sampl;
 		GLint segment;
+		// transformation matrix for banner
+		GLint trans;
 		GLint alphaChannel;
 		//flashlight uniforms
 		GLint flashlightColor;
@@ -46,11 +48,24 @@ typedef struct _ShaderProgram {
 		GLint cameraDirection;
 		GLint isFog;
 		GLint fogHeight;
+		//lights toggle
+		GLint isFlashlight;
+		GLint isDirLight;
+		GLint isPointLight;
 		//material uniform
-		GLint ambient;
-		GLint diffuse;
-		GLint specular;
-		GLint shininess;
+		GLint ambientM;
+		GLint diffuseM;
+		GLint specularM;
+		GLint shininessM;
+		//light uniform
+		GLint ambientL;
+		GLint diffuseL;
+		GLint specularL;
+
+		GLint constant;
+		GLint linear;
+		GLint quadratic;
+
 
 	} locations;
 
@@ -282,6 +297,7 @@ public:
 			geometry->vertices.push_back(vert.x);
 			geometry->vertices.push_back(vert.y);
 			geometry->vertices.push_back(vert.z);
+			//std::cout << vert.x << ", " << vert.y << ", " << vert.z << ", " << std::endl;
 		}
 		/*for (float num : geometry->vertices) {
 			std::cout << num << std::endl;
@@ -290,18 +306,18 @@ public:
 			geometry->vertices.push_back(normal.x);
 			geometry->vertices.push_back(normal.y);
 			geometry->vertices.push_back(normal.z);
+			//std::cout << normal.x << ", " << normal.y << ", " << normal.z << ", " << std::endl;
 		}
-		/*for (float num : geometry->vertices) {
-			std::cout << num << std::endl;
-		}*/
 		for (glm::vec2 tex : textures) {
 			geometry->vertices.push_back(tex.x);
 			geometry->vertices.push_back(tex.y);
+			//std::cout << tex.x << ", " << tex.y << ", " << std::endl;
 		}
 
 
 		geometry->numTriangles = facesNum;
 	}
+
 
 };
 

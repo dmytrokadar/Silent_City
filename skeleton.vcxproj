@@ -169,6 +169,7 @@
     <ClInclude Include="Properties.h" />
     <ClInclude Include="singlemesh.h" />
     <ClInclude Include="Space.h" />
+    <ClInclude Include="SunVert.h" />
     <ClInclude Include="triangle.h" />
   </ItemGroup>
   <ItemGroup>
@@ -193,11 +194,13 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="packages\freetype2.2.6.0.1\build\native\freetype2.targets" Condition="Exists('packages\freetype2.2.6.0.1\build\native\freetype2.targets')" />
+    <Import Project="packages\nlohmann.json.3.11.2\build\native\nlohmann.json.targets" Condition="Exists('packages\nlohmann.json.3.11.2\build\native\nlohmann.json.targets')" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
     <Error Condition="!Exists('packages\freetype2.2.6.0.1\build\native\freetype2.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\freetype2.2.6.0.1\build\native\freetype2.targets'))" />
+    <Error Condition="!Exists('packages\nlohmann.json.3.11.2\build\native\nlohmann.json.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\nlohmann.json.3.11.2\build\native\nlohmann.json.targets'))" />
   </Target>
 </Project>

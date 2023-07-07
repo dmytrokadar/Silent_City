@@ -243,6 +243,10 @@ void Terrain::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatri
 		glUniform3f(shaderProgram->locations.flashlightColor, light.x, light.y, light.z);
 		//glUniform3f(shaderProgram->locations.flashlightPos, lightPos.x, lightPos.y, lightPos.z);
 
+		glUniform3f(shaderProgram->locations.ambientM, 0.1f, 0.1f, 0.1f);
+		glUniform3f(shaderProgram->locations.diffuseM, 0.9f, 1.0f, 0.9f);
+		glUniform3f(shaderProgram->locations.specularM, 0.5f, 0.5f, 0.5f);
+		glUniform1f(shaderProgram->locations.shininessM, 10.0f);
 		/*glUniform3f(shaderProgram->locations.light, light.x, light.y, light.z);
 		glUniform3f(shaderProgram->locations.lightPos, lightPos.x, lightPos.y, lightPos.z);
 		glUniform3f(shaderProgram->locations.cameraPos, cameraPos.x, cameraPos.y, cameraPos.z);
@@ -325,11 +329,12 @@ Terrain::Terrain(ShaderProgram* shdrPrg, int h, int w) : ObjectInstance(shdrPrg)
 	
 	generateTerrain();
 
-	geometry->texture = pgr::createTexture("data/wall.jpg");
+	geometry->texture = pgr::createTexture("data/leafy_grass_diff_4k.jpg");
 	if (geometry->texture == 0) {
 		std::cout << "Texture not loaded!" << std::endl;
 	}
-
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
 	/*geometry->elementBufferObject = 0;*/
 
 	glGenVertexArrays(1, &geometry->vertexArrayObject);

@@ -30,6 +30,11 @@ void Cube::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix, 
 		//TODO change to another color than light
 		glUniform3f(shaderProgram->locations.flashlightColor, light.x, light.y, light.z);
 		CHECK_GL_ERROR();
+
+		glUniform3f(shaderProgram->locations.ambientM, 0.1f, 0.1f, 0.1f);
+		glUniform3f(shaderProgram->locations.diffuseM, 1.0f, 1.0f, 1.0f);
+		glUniform3f(shaderProgram->locations.specularM, 0.5f, 0.5f, 0.5f);
+		glUniform1f(shaderProgram->locations.shininessM, 32.0f);
 		//glUniform3f(shaderProgram->locations.flashlightPos, lightPos.x, lightPos.y, lightPos.z);
 
 		/*glUniform3f(shaderProgram->locations.light, light.x, light.y, light.z);

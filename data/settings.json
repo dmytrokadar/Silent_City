@@ -1,0 +1,7 @@
+{
+    "winW": 800,
+    "winH": 600,
+    "skyboxF" : "Skybox",
+    "bloodBanner":"PainHud.png",
+    "banner":"gameOver.png"
+}

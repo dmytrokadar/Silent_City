@@ -41,14 +41,15 @@
 #include "Space.h"
 #include "CharactersDraw.h"
 #include "singlemesh.h"
+#include "Properties.h"
 #include <AntTweakBar.h>
 #include <ft2build.h>
+#include <nlohmann/json.hpp>
 #include FT_FREETYPE_H 
 
 
 //constexpr int WINDOW_WIDTH = 800;
 //constexpr int WINDOW_HEIGHT = 600;
-constexpr char WINDOW_TITLE[] = "PGR: Application Skeleton";
 
 // objects
 ObjectList objects;
@@ -56,9 +57,11 @@ Sun* sun;
 Car* car;
 Terrain* terrain;
 Animation* movie;
+SingleMesh* sm;
 
 // utilities
 CharactersDraw* characterDraw;
+Properties* properties;
 
 // shared shader programs
 ShaderProgram commonShaderProgram;
@@ -102,34 +105,43 @@ float pitch = 0, yaw = -90.0f;
 glm::mat4 viewMatrix = glm::mat4(1.0f);
 glm::mat4 projectionMatrix = glm::mat4(1.0f);
 
+//std::string skyboxFaces[] = {
+//	"data/Skybox/posx.jpg",
+//	"data/Skybox/negx.jpg",
+//	"data/Skybox/posy.jpg",
+//	"data/Skybox/negy.jpg",
+//	"data/Skybox/posz.jpg",
+//	"data/Skybox/negz.jpg"
+//};
+
 TwBar* menuBar;
 
-std::string skyboxFaces[] = {
-	"data/Skybox/posx.jpg",
-	"data/Skybox/negx.jpg",
-	"data/Skybox/posy.jpg",
-	"data/Skybox/negy.jpg",
-	"data/Skybox/posz.jpg",
-	"data/Skybox/negz.jpg"
-};
-
 struct StateInfo {
+	// window size
 	int windowWidth;
 	int windowHeight;
+
+	//world borders(collision)
 	int worldBorderX;
 	int worldBorderY;
 	int worldBorderZ;
 
+	//toggles
 	bool freeCamera;
 	bool fog;
 	bool blood;
+	bool banner;
 	bool drag;
 	bool dragCamera;
 	bool carCameraFlag;
+	bool menu;
+
+	//light toggles
+	bool isFlashlight;
+	bool isDirLight;
+	bool isPointLight;
 	
 	glm::vec2 mouseLastPos;
-
-	bool menu;
 
 	int fixedCameraPos;
 	float sensetivity;
@@ -177,13 +189,23 @@ void loadDefaultShader() {
 	commonShaderProgram.locations.cameraDirection = glGetUniformLocation(commonShaderProgram.program, "cameraDirection");
 	commonShaderProgram.locations.isFog = glGetUniformLocation(commonShaderProgram.program, "isFog");
 	commonShaderProgram.locations.fogHeight = glGetUniformLocation(commonShaderProgram.program, "fogHeight");
-	CHECK_GL_ERROR();
 
-	commonShaderProgram.locations.ambient = glGetUniformLocation(commonShaderProgram.program, "material.ambient");
-	commonShaderProgram.locations.diffuse = glGetUniformLocation(commonShaderProgram.program, "material.diffuse");
-	commonShaderProgram.locations.specular = glGetUniformLocation(commonShaderProgram.program, "material.specular");
-	commonShaderProgram.locations.shininess = glGetUniformLocation(commonShaderProgram.program, "material.shininess");
-	CHECK_GL_ERROR();
+	commonShaderProgram.locations.isFlashlight = glGetUniformLocation(commonShaderProgram.program, "isFlashlight");
+	commonShaderProgram.locations.isDirLight = glGetUniformLocation(commonShaderProgram.program, "isDirLight");
+	commonShaderProgram.locations.isPointLight = glGetUniformLocation(commonShaderProgram.program, "isPointLight");
+
+	commonShaderProgram.locations.ambientM = glGetUniformLocation(commonShaderProgram.program, "material.ambient");
+	commonShaderProgram.locations.diffuseM = glGetUniformLocation(commonShaderProgram.program, "material.diffuse");
+	commonShaderProgram.locations.specularM = glGetUniformLocation(commonShaderProgram.program, "material.specular");
+	commonShaderProgram.locations.shininessM = glGetUniformLocation(commonShaderProgram.program, "material.shininess");
+	
+	commonShaderProgram.locations.ambientL = glGetUniformLocation(commonShaderProgram.program, "light_s.ambient");
+	commonShaderProgram.locations.diffuseL = glGetUniformLocation(commonShaderProgram.program, "light_s.diffuse");
+	commonShaderProgram.locations.specularL = glGetUniformLocation(commonShaderProgram.program, "light_s.specular");
+	
+	commonShaderProgram.locations.constant = glGetUniformLocation(commonShaderProgram.program, "light_s.constant");
+	commonShaderProgram.locations.linear = glGetUniformLocation(commonShaderProgram.program, "light_s.linear");
+	commonShaderProgram.locations.quadratic = glGetUniformLocation(commonShaderProgram.program, "light_s.quadratic");
 
 
 	assert(commonShaderProgram.locations.PVMmatrix != -1);
@@ -244,6 +266,7 @@ void loadBannerShader() {
 	// other attributes and uniforms
 	//bannerShaderProgram.locations.PVMmatrix = glGetUniformLocation(bannerShaderProgram.program, "PVM");
 	bannerShaderProgram.locations.model = glGetUniformLocation(bannerShaderProgram.program, "model");
+	bannerShaderProgram.locations.trans = glGetUniformLocation(bannerShaderProgram.program, "trans");
 	bannerShaderProgram.locations.time = glGetUniformLocation(bannerShaderProgram.program, "time");
 	bannerShaderProgram.locations.sampl = glGetUniformLocation(bannerShaderProgram.program, "texSampler");
 	//bannerShaderProgram.locations.light = glGetUniformLocation(bannerShaderProgram.program, "light");
@@ -380,6 +403,24 @@ void loadSunShader() {
 	sunShaderProgram.initialized = true;
 }
 
+void loadSkyboxTexture() {
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxGeometry->texture);
+
+	for (int i = 0; i < 6; i++) {
+		if (!pgr::loadTexImage2D(properties->skyboxFaces[i], GL_TEXTURE_CUBE_MAP_POSITIVE_X + i))
+			std::cout << "Failed loading " << properties->skyboxFaces[i] << std::endl;
+	}
+
+	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+}
+
 void loadSkybox() {
 
 	GLuint skyboxShaders[] = {
@@ -411,33 +452,18 @@ void loadSkybox() {
 
 	glUseProgram(skyboxShaderProgram.program);
 	skyboxGeometry = new ObjectGeometry;
-
-	glActiveTexture(GL_TEXTURE2);
-	glGenTextures(1, &skyboxGeometry->texture);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxGeometry->texture);
-
 	glGenBuffers(1, &skyboxGeometry->vertexBufferObject);
 	glBindBuffer(GL_ARRAY_BUFFER, skyboxGeometry->vertexBufferObject);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(screenRectangle), screenRectangle, GL_DYNAMIC_DRAW);
 
-	CHECK_GL_ERROR();
+	//glActiveTexture(GL_TEXTURE2);
+	glGenTextures(1, &skyboxGeometry->texture);
+
 	glGenVertexArrays(1, &skyboxGeometry->vertexArrayObject);
 	glBindVertexArray(skyboxGeometry->vertexArrayObject);
 	glEnableVertexAttribArray(skyboxShaderProgram.locations.position);
 	glVertexAttribPointer(skyboxShaderProgram.locations.position, 2, GL_FLOAT, GL_FALSE, 0, 0);
-
-	for (int i = 0; i < 6; i++) {
-		if(!pgr::loadTexImage2D(skyboxFaces[i], GL_TEXTURE_CUBE_MAP_POSITIVE_X+i))
-			std::cout << "Failed loading " << skyboxFaces[i] << std::endl;
-	}
-
-  	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-	glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+	loadSkyboxTexture();
 	
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
@@ -514,17 +540,26 @@ void drawBanner() {
 	glUseProgram(bannerShaderProgram.program);
 	glBindVertexArray(bannerGeometry->vertexArrayObject);
 	glActiveTexture(GL_TEXTURE4);
-	CHECK_GL_ERROR();
 	glBindTexture(GL_TEXTURE_2D, bannerGeometry->texture);
-	CHECK_GL_ERROR();
 	//glBindVertexArray(bloodGeometry->vertexArrayObject);
-	CHECK_GL_ERROR();
 
-	//glUniformMatrix4fv(bannerShaderProgram.locations.PVMmatrix, 1, GL_FALSE, glm::value_ptr(glm::inverse(projectionMatrix * viewMatrix * glm::mat4(1.0f))));
-	glUniform1f(bannerShaderProgram.locations.time, 0.001f * static_cast<float>(glutGet(GLUT_ELAPSED_TIME)));
-	glUniform1i(bannerShaderProgram.locations.sampl, 4);
+	static glm::mat3 rot = glm::mat3(1);
+
+	float fact = (glm::sin(glutGet(GLUT_ELAPSED_TIME) * 0.003) + 1) / 2;
+	fact = glm::mix(1.0, 10.0, fact);
+
+	rot = glm::mat3(glm::rotate(glm::mat4(1), glm::radians(3.0f), glm::vec3(0, 0, 1))) * rot;
+	glm::mat3 sc = glm::scale(glm::mat4(1), glm::vec3(fact, fact, 1.0f));
+
+	glUniformMatrix3fv(bannerShaderProgram.locations.trans, 1, GL_FALSE, glm::value_ptr(rot * sc));
+
+	//glUniform1f(bannerShaderProgram.locations.time, 0.001f * static_cast<float>(glutGet(GLUT_ELAPSED_TIME)));
 	//glUniformMatrix4fv(skyboxShaderProgram.locations.PVMmatrix, 1, GL_FALSE, glm::value_ptr(invPV));
+	//glUniformMatrix4fv(bannerShaderProgram.locations.PVMmatrix, 1, GL_FALSE, glm::value_ptr(glm::inverse(projectionMatrix * viewMatrix * glm::mat4(1.0f))));
+	//glUniform1f(bannerShaderProgram.locations.time, 0.001f * static_cast<float>(glutGet(GLUT_ELAPSED_TIME)));
+	glUniform1i(bannerShaderProgram.locations.sampl, 4);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
 
 	glBindVertexArray(0);
 	glUseProgram(0);
@@ -616,6 +651,11 @@ void drawScene(void)
 	glUniform3f(commonShaderProgram.locations.cameraDirection, cameraLook.x, cameraLook.y, cameraLook.z);
 	CHECK_GL_ERROR();
 	glUniform1i(commonShaderProgram.locations.isFog, stateInfo.fog);
+
+	glUniform1i(commonShaderProgram.locations.isFlashlight, stateInfo.isFlashlight);
+	glUniform1i(commonShaderProgram.locations.isDirLight, stateInfo.isDirLight);
+	glUniform1i(commonShaderProgram.locations.isPointLight, stateInfo.isPointLight);
+
 	glUniform1f(commonShaderProgram.locations.fogHeight, stateInfo.fogHeight);
 	glUniform1f(commonShaderProgram.locations.alphaChannel, 1);
 	float dirX = sin(time) * radius;
@@ -624,10 +664,18 @@ void drawScene(void)
 	CHECK_GL_ERROR();
 
 	//setup materials
-	glUniform3f(commonShaderProgram.locations.ambient, 0.1f, 0.1f, 0.1f);
-	glUniform3f(commonShaderProgram.locations.diffuse, 1.0f, 1.0f, 1.0f);
-	glUniform3f(commonShaderProgram.locations.specular, 1.0f, 1.0f, 1.0f);
-	glUniform1f(commonShaderProgram.locations.shininess, 32.0f);
+	glUniform3f(commonShaderProgram.locations.ambientM, 0.1f, 0.1f, 0.1f);
+	glUniform3f(commonShaderProgram.locations.diffuseM, 1.0f, 1.0f, 1.0f);
+	glUniform3f(commonShaderProgram.locations.specularM, 1.0f, 1.0f, 1.0f);
+	glUniform1f(commonShaderProgram.locations.shininessM, 32.0f);
+
+	//setup light
+	glUniform3f(commonShaderProgram.locations.ambientL, 1.0f, 1.0f, 1.0f);
+	glUniform3f(commonShaderProgram.locations.diffuseL, 0.5f, 0.5f, 0.5f);
+	glUniform3f(commonShaderProgram.locations.specularL, 1.0f, 1.0f, 1.0f);
+	glUniform1f(commonShaderProgram.locations.constant, 1.0f);
+	glUniform1f(commonShaderProgram.locations.linear, 0.1f);
+	glUniform1f(commonShaderProgram.locations.quadratic, 0.005f);
 
 	//glUseProgram(0);
 	projectionMatrix = glm::perspective(glm::radians(60.0f), float(glutGet(GLUT_WINDOW_WIDTH)) / float(glutGet(GLUT_WINDOW_HEIGHT)), 0.1f, 100.0f);
@@ -660,7 +708,8 @@ void drawScene(void)
 	glDisable(GL_STENCIL_TEST);
 	if(stateInfo.blood)
 		drawBloodBanner();
-	drawBanner();
+	if(stateInfo.banner)
+		drawBanner();
 	glEnable(GL_STENCIL_TEST);
 }
 
@@ -774,7 +823,7 @@ void keyboardCb(unsigned char keyPressed, int mouseX, int mouseY) {
 			//std::cout << "menu " << stateInfo.menu << std::endl;
 			break;
 		case 'z':
-			stateInfo.drag = !stateInfo.menu;
+			stateInfo.drag = !stateInfo.drag;
 			std::cout << "drag " << stateInfo.menu << std::endl;
 			break;
 		default:
@@ -993,14 +1042,29 @@ void TW_CALL bloodCB(void *p) {
 	stateInfo.blood = !stateInfo.blood;
 }
 
+void TW_CALL reloadPropertiesCB(void *p) {
+	properties->reloadProperties();
+	//reshapeCb(properties->getWinW(), properties->getWinH());
+	loadSkyboxTexture();
+}
+
 void initMenu() {
 	menuBar = TwNewBar("Menu");
 	TwDefine("Menu size='240 420' color='20 20 20' fontsize=3 iconified=true");
 	//TwAddButton(menuBar, "BloodHUD", bloodCB, NULL, " label='Blood HUD' ");
 	TwAddVarRW(menuBar, "BloodHUD", TW_TYPE_BOOLCPP, &stateInfo.blood, " label='Blood HUD' ");
+	TwAddVarRW(menuBar, "Banner", TW_TYPE_BOOLCPP, &stateInfo.banner, " label='Banner' ");
 	TwAddVarRW(menuBar, "SunMotion", TW_TYPE_BOOLCPP, &SUN_MOTION_FLAG, " label='Sun Motion' ");
 	TwAddVarRW(menuBar, "CarCamera", TW_TYPE_BOOLCPP, &stateInfo.carCameraFlag, " label='Car Camera' ");
 	TwAddVarRW(menuBar, "FogHeight", TW_TYPE_FLOAT, &stateInfo.fogHeight, " label='Fog Height' step=0.10 min=0.001");
+	
+	//light toggle
+	//TwAddSeparator(menuBar, NULL, " label='Light Toggles' ");
+	TwAddVarRW(menuBar, "Flashlight", TW_TYPE_BOOLCPP, &stateInfo.isFlashlight, " label='Flashlight' group='Light Toggles' ");
+	TwAddVarRW(menuBar, "DirLight", TW_TYPE_BOOLCPP, &stateInfo.isDirLight, " label='Directional Light' group='Light Toggles' ");
+	TwAddVarRW(menuBar, "PointLight", TW_TYPE_BOOLCPP, &stateInfo.isPointLight, " label='Point Light(sun)' group='Light Toggles' ");
+	
+	TwAddButton(menuBar, "Reload", reloadPropertiesCB, NULL, " label='Reload Settings' ");
 }
 
 
@@ -1051,7 +1115,7 @@ void initApplication() {
 	//(objects[0])->loadObjFromFile("data/cubeTriangulated.obj");
 
 	movie = new Animation();
-
+	sm = new SingleMesh();
 	// init your Application
 	// - setup the initial application state
 	characterDraw = new CharactersDraw(&textShaderProgram);
@@ -1073,8 +1137,6 @@ void finalizeApplication(void) {
 	cleanupShaderPrograms();
 }
 
-
-
 /**
  * \brief Entry point of the application.
  * \param argc number of command line arguments
@@ -1086,13 +1148,19 @@ int main(int argc, char** argv) {
 	//init parameters
 	stateInfo.fog = false;
 	stateInfo.blood = false;
+	stateInfo.banner = false;
 	stateInfo.menu = false;
 	stateInfo.drag = false;
 	stateInfo.dragCamera = false;
 	stateInfo.carCameraFlag = false;
 
-	stateInfo.windowHeight = 600;
-	stateInfo.windowWidth = 800;
+	stateInfo.isFlashlight = true;
+	stateInfo.isDirLight = false;
+	stateInfo.isPointLight = true;
+
+	properties = new Properties();
+	stateInfo.windowHeight = properties->getWinH();
+	stateInfo.windowWidth = properties->getWinW();
 	stateInfo.worldBorderX = 50;
 	stateInfo.worldBorderY = 2000;
 	stateInfo.worldBorderZ = 50;
@@ -1100,6 +1168,7 @@ int main(int argc, char** argv) {
 	stateInfo.sensetivity = 0.1f;
 	stateInfo.sensetivityDrag = 0.01f;
 	stateInfo.fogHeight = 3.0f;
+
 
 	// initialize the GLUT library (windowing system)
 	glutInit(&argc, argv);
@@ -1122,6 +1191,8 @@ int main(int argc, char** argv) {
 		pgr::dieWithError("pgr init failed, required OpenGL not supported?");
 	TwInit(TW_OPENGL_CORE, NULL);
 	TwWindowSize(stateInfo.windowWidth, stateInfo.windowHeight);
+
+	glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, nullptr, GL_FALSE);
 
 	//CHECK_GL_ERROR();
 	// callbacks - use only those you need

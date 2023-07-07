@@ -18,6 +18,7 @@
     <ClInclude Include="CharactersDraw.h" />
     <ClInclude Include="Properties.h" />
     <ClInclude Include="Space.h" />
+    <ClInclude Include="SunVert.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Shaders">

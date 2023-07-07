@@ -1,5 +1,6 @@
 #include "Space.h"
 #include "pgr.h"
+#include "SunVert.h"
 #include <iostream>
 #include <glm/gtx/quaternion.hpp>
 
@@ -60,158 +61,11 @@ Sun::Sun(ShaderProgram* shdrPrg, const glm::vec3 pos) : ObjectInstance(shdrPrg),
 
 	position = pos;
 
-	static constexpr float vertices[] = {
-		//Position
-		  -0.5f, -0.5f, -0.5f,
-		  -0.5f, -0.5f,  0.5f,
-		  -0.5f,  0.5f,  0.5f,
-
-		  -0.5f, -0.5f, -0.5f,
-		  -0.5f,  0.5f,  0.5f,
-		  -0.5f,  0.5f, -0.5f,
-
-		  -0.5f, -0.5f,  0.5f,
-		   0.5f,  0.5f,  0.5f,
-		  -0.5f,  0.5f,  0.5f,
-
-		  -0.5f, -0.5f,  0.5f,
-		   0.5f, -0.5f,  0.5f,
-		   0.5f,  0.5f,  0.5f,
-
-		   0.5f, -0.5f,  0.5f,
-		   0.5f, -0.5f, -0.5f,
-		   0.5f,  0.5f, -0.5f,
-
-		   0.5f, -0.5f,  0.5f,
-		   0.5f,  0.5f, -0.5f,
-		   0.5f,  0.5f,  0.5f,
-
-		   0.5f, -0.5f, -0.5f,
-		  -0.5f, -0.5f, -0.5f,
-		  -0.5f,  0.5f, -0.5f,
-
-		   0.5f, -0.5f, -0.5f,
-		  -0.5f,  0.5f, -0.5f,
-		   0.5f,  0.5f, -0.5f,
-
-		  -0.5f,  0.5f,  0.5f,
-		   0.5f,  0.5f,  0.5f,
-		   0.5f,  0.5f, -0.5f,
-
-		  -0.5f,  0.5f,  0.5f,
-		   0.5f,  0.5f, -0.5f,
-		  -0.5f,  0.5f, -0.5f,
-
-		  -0.5f, -0.5f, -0.5f,
-		   0.5f, -0.5f, -0.5f,
-		   0.5f, -0.5f,  0.5f,
-
-		  -0.5f, -0.5f, -0.5f,
-		   0.5f, -0.5f,  0.5f,
-		  -0.5f, -0.5f,  0.5f,
-
-		  // Normals
-		  -1.0f,  0.0f,  0.0f,
-		  -1.0f,  0.0f,  0.0f,
-		  -1.0f,  0.0f,  0.0f,
-
-		  -1.0f,  0.0f,  0.0f,
-		  -1.0f,  0.0f,  0.0f,
-		  -1.0f,  0.0f,  0.0f,
-
-		   0.0f,  0.0f,  1.0f,
-		   0.0f,  0.0f,  1.0f,
-		   0.0f,  0.0f,  1.0f,
-
-		   0.0f,  0.0f,  1.0f,
-		   0.0f,  0.0f,  1.0f,
-		   0.0f,  0.0f,  1.0f,
-
-		   1.0f,  0.0f,  0.0f,
-		   1.0f,  0.0f,  0.0f,
-		   1.0f,  0.0f,  0.0f,
-
-		   1.0f,  0.0f,  0.0f,
-		   1.0f,  0.0f,  0.0f,
-		   1.0f,  0.0f,  0.0f,
-
-		   0.0f,  0.0f, -1.0f,
-		   0.0f,  0.0f, -1.0f,
-		   0.0f,  0.0f, -1.0f,
-
-		   0.0f,  0.0f, -1.0f,
-		   0.0f,  0.0f, -1.0f,
-		   0.0f,  0.0f, -1.0f,
-
-		   0.0f,  1.0f,  0.0f,
-		   0.0f,  1.0f,  0.0f,
-		   0.0f,  1.0f,  0.0f,
-
-		   0.0f,  1.0f,  0.0f,
-		   0.0f,  1.0f,  0.0f,
-		   0.0f,  1.0f,  0.0f,
-
-		   0.0f, -1.0f,  0.0f,
-		   0.0f, -1.0f,  0.0f,
-		   0.0f, -1.0f,  0.0f,
-
-		   0.0f, -1.0f,  0.0f,
-		   0.0f, -1.0f,  0.0f,
-		   0.0f, -1.0f,  0.0f,
-
-		   // Texture
-		   0.0f, 0.0f,
-		   1.0f, 0.0f,
-		   1.0f, 1.0f,
-
-		   0.0f, 0.0f,
-		   1.0f, 1.0f,
-		   0.0f, 1.0f,
-
-		   0.0f, 0.0f,
-		   1.0f, 1.0f,
-		   0.0f, 1.0f,
-
-		   0.0f, 0.0f,
-		   1.0f, 0.0f,
-		   1.0f, 1.0f,
-
-		   0.0f, 0.0f,
-		   1.0f, 0.0f,
-		   1.0f, 1.0f,
-
-		   0.0f, 0.0f,
-		   1.0f, 1.0f,
-		   0.0f, 1.0f,
-
-		   0.0f, 0.0f,
-		   1.0f, 0.0f,
-		   1.0f, 1.0f,
-
-		   0.0f, 0.0f,
-		   1.0f, 1.0f,
-		   0.0f, 1.0f,
-
-		   0.0f, 0.0f,
-		   1.0f, 0.0f,
-		   1.0f, 1.0f,
-
-		   0.0f, 0.0f,
-		   1.0f, 1.0f,
-		   0.0f, 1.0f,
-
-		   0.0f, 0.0f,
-		   1.0f, 0.0f,
-		   1.0f, 1.0f,
-
-		   0.0f, 0.0f,
-		   1.0f, 1.0f,
-		   0.0f, 1.0f,
-	};
+	//static float vertices[] = sunVertices;
 
 	//loadObjFromFile("data/cubeTriangulated.obj");
 
-	geometry->numTriangles = 12;
+	geometry->numTriangles = 960;
 	std::cout << geometry->numTriangles << std::endl;
 	geometry->elementBufferObject = 0;
 
@@ -220,7 +74,7 @@ Sun::Sun(ShaderProgram* shdrPrg, const glm::vec3 pos) : ObjectInstance(shdrPrg),
 
 	glGenBuffers(1, &geometry->vertexBufferObject);
 	glBindBuffer(GL_ARRAY_BUFFER, geometry->vertexBufferObject);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(sunVertices), sunVertices, GL_STATIC_DRAW);
 
 	if ((shaderProgram != nullptr) && shaderProgram->initialized && (shaderProgram->locations.position != -1) && (shaderProgram->locations.PVMmatrix != -1)) {
 		glEnableVertexAttribArray(shaderProgram->locations.position);
