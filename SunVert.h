@@ -8639,4 +8639,4 @@ static const float sunVertices[] = {
 	0.78125, 0.5,
 	0.75, 0.5,
 	0.75, 0.4375
-}
+};

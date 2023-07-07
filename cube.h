@@ -36,6 +36,10 @@ public:
 	void update(float elapsedTime, const glm::mat4* parentModelMatrix) override;
 	void draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix, const glm::vec3 light = glm::vec3(1.0f), const glm::vec3 lightPos = glm::vec3(1.0f), const glm::vec3 cameraPos = glm::vec3(1.0f), const glm::vec3 cameraDirection = glm::vec3(1.0f), const bool isFog = false);
 	void makeCurve();
+	void updateCurve(std::vector<glm::vec3> k, std::vector<glm::vec3> h) {
+		knots = k;
+		handles = h;
+	}
 	glm::vec3 countPositionOnCurve(float t);
 	glm::vec3 countDirectionOnCurve(float t, int segment);
 	glm::vec3 getCarPos();

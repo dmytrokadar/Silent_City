@@ -184,158 +184,9 @@ Planet::Planet(ShaderProgram* shdrPrg, const glm::vec3 pos, glm::vec3 axis, floa
 	glm::vec3 offset = glm::normalize(glm::cross(axis, glm::vec3(0, 1, 0)));
 	localModelMatrix = glm::translate(glm::mat4(1.0f), radius * offset) * glm::scale(glm::mat4(1.0f), glm::vec3(0.5f));
 
-	static constexpr float vertices[] = {
-		//Position
-		  -0.5f, -0.5f, -0.5f,
-		  -0.5f, -0.5f,  0.5f,
-		  -0.5f,  0.5f,  0.5f,
+	loadObjFromFile("data/sphere.obj");
 
-		  -0.5f, -0.5f, -0.5f,
-		  -0.5f,  0.5f,  0.5f,
-		  -0.5f,  0.5f, -0.5f,
-
-		  -0.5f, -0.5f,  0.5f,
-		   0.5f,  0.5f,  0.5f,
-		  -0.5f,  0.5f,  0.5f,
-
-		  -0.5f, -0.5f,  0.5f,
-		   0.5f, -0.5f,  0.5f,
-		   0.5f,  0.5f,  0.5f,
-
-		   0.5f, -0.5f,  0.5f,
-		   0.5f, -0.5f, -0.5f,
-		   0.5f,  0.5f, -0.5f,
-
-		   0.5f, -0.5f,  0.5f,
-		   0.5f,  0.5f, -0.5f,
-		   0.5f,  0.5f,  0.5f,
-
-		   0.5f, -0.5f, -0.5f,
-		  -0.5f, -0.5f, -0.5f,
-		  -0.5f,  0.5f, -0.5f,
-
-		   0.5f, -0.5f, -0.5f,
-		  -0.5f,  0.5f, -0.5f,
-		   0.5f,  0.5f, -0.5f,
-
-		  -0.5f,  0.5f,  0.5f,
-		   0.5f,  0.5f,  0.5f,
-		   0.5f,  0.5f, -0.5f,
-
-		  -0.5f,  0.5f,  0.5f,
-		   0.5f,  0.5f, -0.5f,
-		  -0.5f,  0.5f, -0.5f,
-
-		  -0.5f, -0.5f, -0.5f,
-		   0.5f, -0.5f, -0.5f,
-		   0.5f, -0.5f,  0.5f,
-
-		  -0.5f, -0.5f, -0.5f,
-		   0.5f, -0.5f,  0.5f,
-		  -0.5f, -0.5f,  0.5f,
-
-		  // Normals
-		  -1.0f,  0.0f,  0.0f,
-		  -1.0f,  0.0f,  0.0f,
-		  -1.0f,  0.0f,  0.0f,
-
-		  -1.0f,  0.0f,  0.0f,
-		  -1.0f,  0.0f,  0.0f,
-		  -1.0f,  0.0f,  0.0f,
-
-		   0.0f,  0.0f,  1.0f,
-		   0.0f,  0.0f,  1.0f,
-		   0.0f,  0.0f,  1.0f,
-
-		   0.0f,  0.0f,  1.0f,
-		   0.0f,  0.0f,  1.0f,
-		   0.0f,  0.0f,  1.0f,
-
-		   1.0f,  0.0f,  0.0f,
-		   1.0f,  0.0f,  0.0f,
-		   1.0f,  0.0f,  0.0f,
-
-		   1.0f,  0.0f,  0.0f,
-		   1.0f,  0.0f,  0.0f,
-		   1.0f,  0.0f,  0.0f,
-
-		   0.0f,  0.0f, -1.0f,
-		   0.0f,  0.0f, -1.0f,
-		   0.0f,  0.0f, -1.0f,
-
-		   0.0f,  0.0f, -1.0f,
-		   0.0f,  0.0f, -1.0f,
-		   0.0f,  0.0f, -1.0f,
-
-		   0.0f,  1.0f,  0.0f,
-		   0.0f,  1.0f,  0.0f,
-		   0.0f,  1.0f,  0.0f,
-
-		   0.0f,  1.0f,  0.0f,
-		   0.0f,  1.0f,  0.0f,
-		   0.0f,  1.0f,  0.0f,
-
-		   0.0f, -1.0f,  0.0f,
-		   0.0f, -1.0f,  0.0f,
-		   0.0f, -1.0f,  0.0f,
-
-		   0.0f, -1.0f,  0.0f,
-		   0.0f, -1.0f,  0.0f,
-		   0.0f, -1.0f,  0.0f,
-
-		   // Texture
-		   0.0f, 0.0f,
-		   1.0f, 0.0f,
-		   1.0f, 1.0f,
-
-		   0.0f, 0.0f,
-		   1.0f, 1.0f,
-		   0.0f, 1.0f,
-
-		   0.0f, 0.0f,
-		   1.0f, 1.0f,
-		   0.0f, 1.0f,
-
-		   0.0f, 0.0f,
-		   1.0f, 0.0f,
-		   1.0f, 1.0f,
-
-		   0.0f, 0.0f,
-		   1.0f, 0.0f,
-		   1.0f, 1.0f,
-
-		   0.0f, 0.0f,
-		   1.0f, 1.0f,
-		   0.0f, 1.0f,
-
-		   0.0f, 0.0f,
-		   1.0f, 0.0f,
-		   1.0f, 1.0f,
-
-		   0.0f, 0.0f,
-		   1.0f, 1.0f,
-		   0.0f, 1.0f,
-
-		   0.0f, 0.0f,
-		   1.0f, 0.0f,
-		   1.0f, 1.0f,
-
-		   0.0f, 0.0f,
-		   1.0f, 1.0f,
-		   0.0f, 1.0f,
-
-		   0.0f, 0.0f,
-		   1.0f, 0.0f,
-		   1.0f, 1.0f,
-
-		   0.0f, 0.0f,
-		   1.0f, 1.0f,
-		   0.0f, 1.0f,
-	};
-
-	//loadObjFromFile("data/cubeTriangulated.obj");
-
-	geometry->numTriangles = 12;
+	//geometry->numTriangles = 12;
 	std::cout << geometry->numTriangles << std::endl;
 	geometry->elementBufferObject = 0;
 
@@ -344,17 +195,17 @@ Planet::Planet(ShaderProgram* shdrPrg, const glm::vec3 pos, glm::vec3 axis, floa
 
 	glGenBuffers(1, &geometry->vertexBufferObject);
 	glBindBuffer(GL_ARRAY_BUFFER, geometry->vertexBufferObject);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, geometry->vertices.size() * sizeof(float), &(geometry->vertices[0]), GL_STATIC_DRAW);
 
 	if ((shaderProgram != nullptr) && shaderProgram->initialized && (shaderProgram->locations.position != -1) && (shaderProgram->locations.PVMmatrix != -1)) {
 		glEnableVertexAttribArray(shaderProgram->locations.position);
 		glVertexAttribPointer(shaderProgram->locations.position, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
 
-		/*glEnableVertexAttribArray(shaderProgram->locations.normals);
+		glEnableVertexAttribArray(shaderProgram->locations.normals);
 		glVertexAttribPointer(shaderProgram->locations.normals, 3, GL_FLOAT, GL_FALSE, 0, (void*)(12 * 3 * 3 * sizeof(float)));
 
 		glEnableVertexAttribArray(shaderProgram->locations.texture);
-		glVertexAttribPointer(shaderProgram->locations.texture, 2, GL_FLOAT, GL_FALSE, 0, (void*)(12 * 3 * 3 * 2 * sizeof(float)));*/
+		glVertexAttribPointer(shaderProgram->locations.texture, 2, GL_FLOAT, GL_FALSE, 0, (void*)(12 * 3 * 3 * 2 * sizeof(float)));
 
 		//glBindTexture(GL_TEXTURE_2D, geometry->texture);
 		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);

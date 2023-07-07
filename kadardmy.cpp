@@ -1046,6 +1046,7 @@ void TW_CALL reloadPropertiesCB(void *p) {
 	properties->reloadProperties();
 	//reshapeCb(properties->getWinW(), properties->getWinH());
 	loadSkyboxTexture();
+	car->updateCurve(properties->getKnotsBezier(), properties->getHandlesBezier());
 }
 
 void initMenu() {
@@ -1115,7 +1116,7 @@ void initApplication() {
 	//(objects[0])->loadObjFromFile("data/cubeTriangulated.obj");
 
 	movie = new Animation();
-	sm = new SingleMesh();
+	//sm = new SingleMesh();
 	// init your Application
 	// - setup the initial application state
 	characterDraw = new CharactersDraw(&textShaderProgram);
