@@ -97,10 +97,21 @@ public:
 	std::vector < glm::vec3 >& getHandlesCatmull() {
 		return handlesCatmull;
 	}
+
+	std::string getBannerI() {
+		return bannerI;
+	}
+
+	std::string getBloodI() {
+		return bloodI;
+	}
 private:
 	std::vector<std::string> images;
 	std::string parentFolder = "data/";
 	std::string folder = "Skybox";
+
+	std::string bloodI = "data/PainHud.png";
+	std::string bannerI = "data/gameOver.png";
 
 	std::vector < glm::vec3 > knotsBezier;
 	std::vector < glm::vec3 > handlesBezier;

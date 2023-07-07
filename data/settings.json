@@ -2,10 +2,10 @@
     "winW": 800,
     "winH": 600,
     "skyboxF" : "Skybox",
-    "bloodBanner":"PainHud.png",
-    "banner":"gameOver.png",
+    "bloodBanner":"data/PainHud.png",
+    "banner":"data/gameOver.png",
     "knotsBezier":[
-        [-1.0000, 10.0000, 0.0000],
+        [-1.0000, 1.0000, 0.0000],
         [1.0000, 1.0000, 0.0000],
         [1.3612, 1.0000, -0.8741],
         [-0.3155, 1.0000, -1.0881],

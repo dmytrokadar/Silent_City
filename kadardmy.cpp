@@ -128,6 +128,8 @@ struct StateInfo {
 
 	//toggles
 	bool freeCamera;
+	bool staticCam1;
+	bool staticCam2;
 	bool fog;
 	bool blood;
 	bool banner;
@@ -240,6 +242,19 @@ void loadTextShader() {
 	textShaderProgram.initialized = true;
 }
 
+void loadBannerTexture() {
+	// texture setup
+	glActiveTexture(GL_TEXTURE4);
+	bannerGeometry->texture = pgr::createTexture(properties->getBannerI());
+	if (bannerGeometry->texture == 0) {
+		std::cout << "Texture not loaded!" << std::endl;
+	}
+	CHECK_GL_ERROR();
+	glBindTexture(GL_TEXTURE_2D, bannerGeometry->texture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+}
+
 void loadBannerShader() {
 	// initializing default shader
 	GLuint shaders[] = {
@@ -280,19 +295,7 @@ void loadBannerShader() {
 
 	bannerGeometry = new ObjectGeometry;
 
-	// texture setup
-	glActiveTexture(GL_TEXTURE4);
-	bannerGeometry->texture = pgr::createTexture("data/gameOver.png");
-	if (bannerGeometry->texture == 0) {
-		std::cout << "Texture not loaded!" << std::endl;
-	}
-	CHECK_GL_ERROR();
-	glBindTexture(GL_TEXTURE_2D, bannerGeometry->texture);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-
-	//glGenTextures(1, &bloodGeometry->texture);
-	//glBindTexture(GL_TEXTURE_CUBE_MAP, bloodGeometry->texture);
+	loadBannerTexture();
 
 	// buffers 
 	glGenBuffers(1, &bannerGeometry->vertexBufferObject);
@@ -308,6 +311,17 @@ void loadBannerShader() {
 	glBindVertexArray(0);
 	glUseProgram(0);
 	CHECK_GL_ERROR();
+}
+
+void loadBloodTexture() {
+	glActiveTexture(GL_TEXTURE4);
+	bloodGeometry->texture = pgr::createTexture(properties->getBloodI());
+	if (bloodGeometry->texture == 0) {
+		std::cout << "Texture not loaded!" << std::endl;
+	}
+	CHECK_GL_ERROR();
+	glBindTexture(GL_TEXTURE_2D, bloodGeometry->texture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
 }
 
 void loadBloodBannerShader() {
@@ -349,14 +363,7 @@ void loadBloodBannerShader() {
 	bloodGeometry = new ObjectGeometry;
 
 	// texture setup
-	glActiveTexture(GL_TEXTURE4);
-	bloodGeometry->texture = pgr::createTexture("data/PainHud.png");
-	if (bloodGeometry->texture == 0) {
-		std::cout << "Texture not loaded!" << std::endl;
-	}
-	CHECK_GL_ERROR();
-	glBindTexture(GL_TEXTURE_2D, bloodGeometry->texture);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	loadBloodTexture();
 
 	//glGenTextures(1, &bloodGeometry->texture);
 	//glBindTexture(GL_TEXTURE_CUBE_MAP, bloodGeometry->texture);
@@ -611,13 +618,25 @@ void drawScene(void)
 	}
 
 
-	if (ROTATION_FLAG) {
-		float camX = sin(time) * radius;
-		float camZ = cos(time) * radius;
+	//if (ROTATION_FLAG) {
+	//	float camX = sin(time) * radius;
+	//	float camZ = cos(time) * radius;
 
-		//std::cout << glutGet(GLUT_ELAPSED_TIME) << std::endl;
+	//	//std::cout << glutGet(GLUT_ELAPSED_TIME) << std::endl;
 
-		cameraPosGlobal = glm::vec3(camX / 2, 3.0, camZ / 2);
+	//	cameraPosGlobal = glm::vec3(camX / 2, 3.0, camZ / 2);
+	//	cameraLook = glm::vec3(0.0f) - cameraPosGlobal;
+	//	cameraLook = normalize(cameraLook);
+	//	viewMatrix = glm::lookAt(cameraPosGlobal, cameraLook, glm::vec3(0.0, 1.0, 0.0));
+	//}
+	if (stateInfo.staticCam1) {
+		cameraPosGlobal = glm::vec3(2.0, 3.0, 2.0);
+		cameraLook = glm::vec3(0.0f) - cameraPosGlobal;
+		cameraLook = normalize(cameraLook);
+		viewMatrix = glm::lookAt(cameraPosGlobal, cameraLook, glm::vec3(0.0, 1.0, 0.0));
+	}
+	else if (stateInfo.staticCam2) {
+		cameraPosGlobal = glm::vec3(1.0, 5.0, 4.0);
 		cameraLook = glm::vec3(0.0f) - cameraPosGlobal;
 		cameraLook = normalize(cameraLook);
 		viewMatrix = glm::lookAt(cameraPosGlobal, cameraLook, glm::vec3(0.0, 1.0, 0.0));
@@ -631,6 +650,7 @@ void drawScene(void)
 		viewMatrix = glm::lookAt(cameraPosGlobal, cameraLook+cameraPosGlobal, glm::vec3(0.0, 1.0, 0.0));
 	}
 	else {
+		cameraPos = cameraPosGlobal;
 		direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
 		direction.y = sin(glm::radians(pitch));
 		direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
@@ -999,7 +1019,8 @@ void timerCb(int)
 		//std::cout << "w pressed" << std::endl;
 		cameraPos += direction;
 		if(cameraPos.x > stateInfo.worldBorderX || cameraPos.x < -stateInfo.worldBorderX ||
-			cameraPos.z > stateInfo.worldBorderZ || cameraPos.z < -stateInfo.worldBorderZ)
+			cameraPos.z > stateInfo.worldBorderZ || cameraPos.z < -stateInfo.worldBorderZ ||
+			cameraPos.y < stateInfo.worldBorderY || cameraPos.y > stateInfo.worldBorderY+500)
 			cameraPos -= direction;
 
 	}
@@ -1008,7 +1029,8 @@ void timerCb(int)
 		//std::cout << "s pressed" << std::endl;
 		cameraPos -= direction;
 		if (cameraPos.x > stateInfo.worldBorderX || cameraPos.x < -stateInfo.worldBorderX ||
-			cameraPos.z > stateInfo.worldBorderZ || cameraPos.z < -stateInfo.worldBorderZ)
+			cameraPos.z > stateInfo.worldBorderZ || cameraPos.z < -stateInfo.worldBorderZ ||
+			cameraPos.y < stateInfo.worldBorderY || cameraPos.y > stateInfo.worldBorderY + 500)
 		cameraPos += direction;
 
 	}
@@ -1018,7 +1040,8 @@ void timerCb(int)
 		//std::cout << "d pressed" << std::endl;
 		cameraPos += direction;
 		if (cameraPos.x > stateInfo.worldBorderX || cameraPos.x < -stateInfo.worldBorderX ||
-			cameraPos.z > stateInfo.worldBorderZ || cameraPos.z < -stateInfo.worldBorderZ)
+			cameraPos.z > stateInfo.worldBorderZ || cameraPos.z < -stateInfo.worldBorderZ ||
+			cameraPos.y < stateInfo.worldBorderY || cameraPos.y > stateInfo.worldBorderY + 500)
 		cameraPos -= direction;
 	}
 
@@ -1026,7 +1049,8 @@ void timerCb(int)
 			//std::cout << "a pressed" << std::endl;
 			cameraPos -= direction;
 		if (cameraPos.x > stateInfo.worldBorderX || cameraPos.x < -stateInfo.worldBorderX ||
-			cameraPos.z > stateInfo.worldBorderZ || cameraPos.z < -stateInfo.worldBorderZ)
+			cameraPos.z > stateInfo.worldBorderZ || cameraPos.z < -stateInfo.worldBorderZ ||
+			cameraPos.y < stateInfo.worldBorderY || cameraPos.y > stateInfo.worldBorderY + 500)
 			cameraPos += direction;
 	}
 	
@@ -1046,6 +1070,8 @@ void TW_CALL reloadPropertiesCB(void *p) {
 	properties->reloadProperties();
 	//reshapeCb(properties->getWinW(), properties->getWinH());
 	loadSkyboxTexture();
+	loadBannerTexture();
+	loadBloodTexture();
 	car->updateCurve(properties->getKnotsBezier(), properties->getHandlesBezier());
 }
 
@@ -1056,6 +1082,8 @@ void initMenu() {
 	TwAddVarRW(menuBar, "BloodHUD", TW_TYPE_BOOLCPP, &stateInfo.blood, " label='Blood HUD' ");
 	TwAddVarRW(menuBar, "Banner", TW_TYPE_BOOLCPP, &stateInfo.banner, " label='Banner' ");
 	TwAddVarRW(menuBar, "SunMotion", TW_TYPE_BOOLCPP, &SUN_MOTION_FLAG, " label='Sun Motion' ");
+	TwAddVarRW(menuBar, "staticCam1", TW_TYPE_BOOLCPP, &stateInfo.staticCam1, " label='Static Camera 1' ");
+	TwAddVarRW(menuBar, "staticCam2", TW_TYPE_BOOLCPP, &stateInfo.staticCam2, " label='Static Camera 2' ");
 	TwAddVarRW(menuBar, "CarCamera", TW_TYPE_BOOLCPP, &stateInfo.carCameraFlag, " label='Car Camera' ");
 	TwAddVarRW(menuBar, "FogHeight", TW_TYPE_FLOAT, &stateInfo.fogHeight, " label='Fog Height' step=0.10 min=0.001");
 	
@@ -1111,6 +1139,7 @@ void initApplication() {
 	pl->addChildren(new Planet(&commonShaderProgram, glm::vec3(0.0f), glm::vec3(2,0, 10), 2.0f, 2.0f));
 	sun->addChildren(pl);
 	car = new Car(&commonShaderProgram, glm::vec3(4.0f, 1.5f, 2.0f));
+	car->updateCurve(properties->getKnotsBezier(), properties->getHandlesBezier());
 	terrain = new Terrain(&commonShaderProgram, stateInfo.worldBorderZ, stateInfo.worldBorderX);
 	// objects.push_back(new SingleMesh(&commonShaderProgram));
 	//(objects[0])->loadObjFromFile("data/cubeTriangulated.obj");
@@ -1154,6 +1183,9 @@ int main(int argc, char** argv) {
 	stateInfo.drag = false;
 	stateInfo.dragCamera = false;
 	stateInfo.carCameraFlag = false;
+
+	stateInfo.staticCam1 = true;
+	stateInfo.staticCam2 = false;
 
 	stateInfo.isFlashlight = true;
 	stateInfo.isDirLight = false;

@@ -8,15 +8,9 @@ CharactersDraw::CharactersDraw(ShaderProgram* shdrPrg, float monitorWidth, float
 
 	
 
-	if (FT_Init_FreeType(&ft))
-	{
-		std::cout << "ERROR::FREETYPE: Could not init FreeType Library" << std::endl;
-	}
+	assert(!FT_Init_FreeType(&ft));
 
-	if (FT_New_Face(ft, "data/fonts/impact.ttf", 0, &face))
-	{
-		std::cout << "ERROR::FREETYPE: Failed to load font" << std::endl;
-	}
+	assert(!FT_New_Face(ft, "data/fonts/impact.ttf", 0, &face));
 
 	FT_Set_Pixel_Sizes(face, 0, 48);
 	mapAllCharacters();
@@ -34,7 +28,6 @@ CharactersDraw::CharactersDraw(ShaderProgram* shdrPrg, float monitorWidth, float
 
 	glGenBuffers(1, &geometry->vertexBufferObject);
 	glBindBuffer(GL_ARRAY_BUFFER, geometry->vertexBufferObject);
-	//TODO mb static
 	glBufferData(GL_ARRAY_BUFFER, 6*4*sizeof(float), NULL, GL_DYNAMIC_DRAW);
 	glEnableVertexAttribArray(shaderProgram->locations.position);
 	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
@@ -120,13 +113,7 @@ void CharactersDraw::mapAllCharacters() {
 		glGenTextures(1, &characters[i].texture);
 		glActiveTexture(GL_TEXTURE3);
 		glBindTexture(GL_TEXTURE_2D, characters[i].texture);
-		glTexImage2D(
-			GL_TEXTURE_2D,
-			0,
-			GL_RED,
-			face->glyph->bitmap.width,
-			face->glyph->bitmap.rows,
-			0,
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, face->glyph->bitmap.width, face->glyph->bitmap.rows, 0, 
 			GL_RED,
 			GL_UNSIGNED_BYTE,
 			face->glyph->bitmap.buffer
