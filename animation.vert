@@ -2,11 +2,13 @@
 
 uniform mat4 PVM;     // Projection * View * Model --> model to clip coordinates
 uniform int segment;
+uniform mat4 model;
 
 in vec3 position;           // vertex position in world space
 in vec2 texCoord;           // incoming texture coordinates
 
 smooth out vec2 texCoord_v; // outgoing texture coordinates
+out vec3 fragmentPos;       // outgoing fragment position
 
 float decay = 0.05;
 int width = 5;
@@ -49,7 +51,7 @@ void main() {
 
   vec2 tmp = (position.xy + 1)/2;
   texCoord_v = vec2((w+(tmp.x)*clipW)/globalW, (h+(tmp.y)*clipH)/globalH);
-
+  fragmentPos = vec3(model * vec4(position, 1.0f));
   //texCoord_v = texCoord;
   //texCoord_v = (position.xy + 1)/2;
 }

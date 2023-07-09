@@ -1,0 +1,12 @@
+#DownloadModelFormat: OBJ
+#GeometryFile: GasCylinders.obj
+#MaterialFile: GasCylinders.mtl
+#PreviewFile: Preview03.png
+#OtherFiles: 
+#DownloadedFromURL:
+#DateOfDownload:
+#CreatedBy: Dominik Chaloupka
+#CreatedIn: Blender v2.79
+#UploadedBy: Dominik Chaloupka
+#Description: Blast furnace from Vitkovice steel works
+#NumberOfVertices: 2 520

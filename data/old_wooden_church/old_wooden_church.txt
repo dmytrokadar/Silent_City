@@ -1,0 +1,12 @@
+#DownloadModelFormat: OBJ
+#GeometryFile: old_wooden_church.obj
+#MaterialFile: old_wooden_church.mtl
+#PreviewFile: old_wooden_church.jpg
+#OtherFiles: church_normal.png, church_texture.png
+#DownloadedFromURL: https://sketchfab.com/3d-models/western-church-ade447109b3743eab39a92bb08a55cd0
+#DateOfDownload: 28.4.2021
+#CreatedBy: Dmytro Erdeli
+#CreatedIn: Blender
+#UploadedBy: Vojtěch Kopecký
+#Description: An old wooden church from the Wild West
+#NumberOfPolygons: 996

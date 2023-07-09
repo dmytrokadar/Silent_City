@@ -1,0 +1,12 @@
+#DownloadModelFormat: OBJ
+#GeometryFile: GrainStorage02.obj
+#MaterialFile: GrainStorage02.mtl
+#PreviewFile: Preview02.png
+#OtherFiles: GrainStorage02.blend
+#DownloadedFromURL:
+#DateOfDownload:
+#CreatedBy: Dominik Chaloupka
+#CreatedIn: Blender v2.79
+#UploadedBy: Dominik Chaloupka
+#Description: Grain storage from Strancice
+#NumberOfVertices: 1 846

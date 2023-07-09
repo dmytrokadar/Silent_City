@@ -1,0 +1,12 @@
+#DownloadModelFormat: OBJ
+#GeometryFile: HorusiceTrainStation.obj
+#MaterialFile: HorusiceTrainStation.mtl
+#PreviewFile: preview.jpg
+#OtherFiles: HorusiceTrainStation.blend
+#DownloadedFromURL:
+#DateOfDownload:
+#CreatedBy: Dominik Chaloupka
+#CreatedIn: Blender v2.79
+#UploadedBy: Dominik Chaloupka
+#Description: Train station located in Horusice in south of Czechia, material Noc can be used without lightning as a night glowing windows
+#NumberOfVertices: 568

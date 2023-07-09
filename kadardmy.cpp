@@ -39,6 +39,7 @@
 #include "cube.h"
 #include "Barrel.h"
 #include "Space.h"
+#include "ComplexMesh.h"
 #include "CharactersDraw.h"
 #include "singlemesh.h"
 #include "Properties.h"
@@ -53,6 +54,7 @@
 
 // objects
 ObjectList objects;
+DefaultObject* transparent;
 Sun* sun;
 Car* car;
 Terrain* terrain;
@@ -96,10 +98,18 @@ glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
 glm::vec3 cameraLook = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 glm::vec3 direction;
+glm::vec3 curveDirection;
+
+glm::vec3 objPos = glm::vec3(1.0f);
+float objSc = 1.0f;
+
+std::vector<glm::vec3> knots;
+std::vector<glm::vec3> handles;
 
 glm::vec3 sunPos = glm::vec3(4.0f, 5.0f, 0.0f);
 
 float pitch = 0, yaw = -90.0f;
+float tGlobal = 0;
 //float lastMouseX = WINDOW_WIDTH / 2, lastMouseY = WINDOW_HEIGHT / 2;
 
 glm::mat4 viewMatrix = glm::mat4(1.0f);
@@ -124,15 +134,18 @@ struct StateInfo {
 	//world borders(collision)
 	int worldBorderX;
 	int worldBorderY;
+	int worldBorderYUp;
 	int worldBorderZ;
 
 	//toggles
 	bool freeCamera;
 	bool staticCam1;
 	bool staticCam2;
+	bool cameraCurve;
 	bool fog;
 	bool blood;
 	bool banner;
+	bool text;
 	bool drag;
 	bool dragCamera;
 	bool carCameraFlag;
@@ -150,6 +163,8 @@ struct StateInfo {
 	float sensetivityDrag;
 	float cameraSpeed;
 
+	float cameraAcc;
+	float transparency;
 	float fogHeight;
 } stateInfo;
 
@@ -187,9 +202,9 @@ void loadDefaultShader() {
 	commonShaderProgram.locations.dirLightVec = glGetUniformLocation(commonShaderProgram.program, "dirLightVec");
 	CHECK_GL_ERROR();
 
-	commonShaderProgram.locations.cameraPos = glGetUniformLocation(commonShaderProgram.program, "cameraPos");
 	commonShaderProgram.locations.cameraDirection = glGetUniformLocation(commonShaderProgram.program, "cameraDirection");
 	commonShaderProgram.locations.isFog = glGetUniformLocation(commonShaderProgram.program, "isFog");
+	commonShaderProgram.locations.cameraPos = glGetUniformLocation(commonShaderProgram.program, "cameraPos");
 	commonShaderProgram.locations.fogHeight = glGetUniformLocation(commonShaderProgram.program, "fogHeight");
 
 	commonShaderProgram.locations.isFlashlight = glGetUniformLocation(commonShaderProgram.program, "isFlashlight");
@@ -279,14 +294,10 @@ void loadBannerShader() {
 	bannerShaderProgram.locations.texture = glGetAttribLocation(bannerShaderProgram.program, "texCoord");
 
 	// other attributes and uniforms
-	//bannerShaderProgram.locations.PVMmatrix = glGetUniformLocation(bannerShaderProgram.program, "PVM");
 	bannerShaderProgram.locations.model = glGetUniformLocation(bannerShaderProgram.program, "model");
 	bannerShaderProgram.locations.trans = glGetUniformLocation(bannerShaderProgram.program, "trans");
 	bannerShaderProgram.locations.time = glGetUniformLocation(bannerShaderProgram.program, "time");
 	bannerShaderProgram.locations.sampl = glGetUniformLocation(bannerShaderProgram.program, "texSampler");
-	//bannerShaderProgram.locations.light = glGetUniformLocation(bannerShaderProgram.program, "light");
-	//bannerShaderProgram.locations.lightPos = glGetUniformLocation(bannerShaderProgram.program, "lightPos");
-	//bannerShaderProgram.locations.cameraPos = glGetUniformLocation(bannerShaderProgram.program, "cameraPos");
 
 	//assert(bannerShaderProgram.locations.PVMmatrix != -1);
 	assert(bannerShaderProgram.locations.position != -1);
@@ -348,12 +359,8 @@ void loadBloodBannerShader() {
 	bloodBannerShaderProgram.locations.texture = glGetAttribLocation(bloodBannerShaderProgram.program, "texCoord");
 
 	// other attributes and uniforms
-	//bannerShaderProgram.locations.PVMmatrix = glGetUniformLocation(bannerShaderProgram.program, "PVM");
 	bloodBannerShaderProgram.locations.model = glGetUniformLocation(bloodBannerShaderProgram.program, "model");
 	bloodBannerShaderProgram.locations.sampl = glGetUniformLocation(bloodBannerShaderProgram.program, "texSampler");
-	//bannerShaderProgram.locations.light = glGetUniformLocation(bannerShaderProgram.program, "light");
-	//bannerShaderProgram.locations.lightPos = glGetUniformLocation(bannerShaderProgram.program, "lightPos");
-	//bannerShaderProgram.locations.cameraPos = glGetUniformLocation(bannerShaderProgram.program, "cameraPos");
 
 	//assert(bannerShaderProgram.locations.PVMmatrix != -1);
 	assert(bloodBannerShaderProgram.locations.position != -1);
@@ -594,6 +601,80 @@ void drawBloodBanner() {
 	glDepthFunc(GL_LESS);
 }
 
+void makeCurve() {
+	// every segment has two knots and handlers, but second knot of every segment
+	// is first knot of next segment, so we can store them only once
+	// segnent 0
+	knots.push_back(glm::vec3(-1.0000, 0.0000, 0.0000));
+	handles.push_back(glm::vec3(-0.3260, 0.0000, 0.2139));
+	handles.push_back(glm::vec3(0.1340, 0.0000, -0.5000));
+	//knots.push_back(glm::vec3(1.0000, 0.0000, 0.0000));
+	// segnent 1
+	knots.push_back(glm::vec3(1.0000, 0.0000, 0.0000));
+	handles.push_back(glm::vec3(1.6440, 0.0000, 0.3718));
+	handles.push_back(glm::vec3(2.4522, 0.0000, -0.8467));
+	//knots.push_back(glm::vec3(1.3612, -0.8741, 0.0000));
+	//segnent  2
+	knots.push_back(glm::vec3(1.3612, 0.0000, -0.8741));
+	handles.push_back(glm::vec3(0.4038, 0.0000, -0.8982));
+	handles.push_back(glm::vec3(0.7235, 0.0000, -1.4217));
+	//knots.push_back(glm::vec3(-0.3155, -1.0881, 0.0000));
+	// segnent  3
+	knots.push_back(glm::vec3(-0.3155, 0.0000, -1.0881));
+	handles.push_back(glm::vec3(-0.9639, 0.0000, -0.8799));
+	handles.push_back(glm::vec3(-1.4255, 0.0000, -0.1350));
+	// last knot is first knot
+	knots.push_back(glm::vec3(-1.0000, 0.0000, 0.0000));
+	//knots.push_back(glm::vec3(-1.0000, 0.0000, 0.0000));
+
+
+}
+
+// count direction to face while moving on curve
+void countDirectionOnCurve(float t, int segment) {
+	glm::vec3 resultDir;
+	//resultPos = (b1 * handles[segment * 2]) + (b2 * knots[segment]) + (b3 * knots[segment+1]) + (b4 * handles[(segment * 2) + 1]);
+
+	float b1 = -3*pow(t, 2) + 4 * t - 1;
+	float b2 = 3 * 3 * pow(t, 2) - 5 * 2 * t;
+	float b3 = -3 * -3 * pow(t, 2) + 4 * 2 * t + 1;
+	float b4 = 3 * pow(t, 2) - 2*t;
+
+	resultDir = (b1 * handles[segment * 2]) + (b2 * knots[segment]) + (b3 * knots[segment + 1]) + (b4 * handles[(segment * 2) + 1]);
+	curveDirection = resultDir;
+
+	//return resultDir;
+}
+
+// count position with given t value on curve segment
+glm::vec3 countPositionOnCurve(float t) {
+	glm::vec3 resultPos;
+
+	int segment = floor(t);
+	if (segment >= MAX_T) {
+		t -= 4;
+		tGlobal = t;
+		segment = 0;
+	}
+
+	t -= segment;
+
+	float b1 = -pow(t, 3)  + 2 * pow(t, 2) - t;
+	float b2 = 3*pow(t, 3) - 5 * pow(t, 2) + 2;
+	float b3 = -3*pow(t, 3)+ 4 * pow(t, 2) + t;
+	float b4 = pow(t, 3)   - pow(t, 2);
+
+	//std::cout << "t: " << t << std::endl;
+	//std::cout << "segment: " << segment << std::endl;
+	//std::cout << segment * 2 << " " << segment * 2 + 1 << std::endl;
+
+	resultPos = (b1 * handles[segment * 2]) + (b2 * knots[segment]) + (b3 * knots[segment+1]) + (b4 * handles[(segment * 2) + 1]);
+
+	//resultPos = (float)pow(1 - t, 3) * knots[segment] + 3 * (float)pow(1 - t, 2) * t * handles[segment * 2] + 3 * (1 - t) * (float)pow(t, 2) * handles[(segment * 2) + 1] + (float)pow(t, 3) * knots[segment + 1];
+	countDirectionOnCurve(t, segment);
+
+	return resultPos * 10.0f;
+}
 
 /**
  * \brief Draw all scene objects.
@@ -604,7 +685,7 @@ void drawScene(void)
 	delayFrame = time - lastFrame;
 	lastFrame = time;
 
-	CAMERA_SPEED = 2.5f * delayFrame;
+	CAMERA_SPEED = stateInfo.cameraAcc * delayFrame;
 	const float radius = 10.0f;
 
 	if (SUN_MOTION_FLAG) {
@@ -617,7 +698,6 @@ void drawScene(void)
 		sun->changePosition(sunPos);
 	}
 
-
 	//if (ROTATION_FLAG) {
 	//	float camX = sin(time) * radius;
 	//	float camZ = cos(time) * radius;
@@ -629,33 +709,42 @@ void drawScene(void)
 	//	cameraLook = normalize(cameraLook);
 	//	viewMatrix = glm::lookAt(cameraPosGlobal, cameraLook, glm::vec3(0.0, 1.0, 0.0));
 	//}
-	if (stateInfo.staticCam1) {
-		cameraPosGlobal = glm::vec3(2.0, 3.0, 2.0);
-		cameraLook = glm::vec3(0.0f) - cameraPosGlobal;
-		cameraLook = normalize(cameraLook);
-		viewMatrix = glm::lookAt(cameraPosGlobal, cameraLook, glm::vec3(0.0, 1.0, 0.0));
-	}
-	else if (stateInfo.staticCam2) {
-		cameraPosGlobal = glm::vec3(1.0, 5.0, 4.0);
-		cameraLook = glm::vec3(0.0f) - cameraPosGlobal;
-		cameraLook = normalize(cameraLook);
-		viewMatrix = glm::lookAt(cameraPosGlobal, cameraLook, glm::vec3(0.0, 1.0, 0.0));
+	if (!stateInfo.freeCamera) {
+		if (stateInfo.staticCam1) {
+			cameraPosGlobal = glm::vec3(2.0, 3.0, 2.0);
+			//static glm::vec3 look ;
+			cameraLook = glm::vec3(0.0f);
+			//cameraLook = normalize(cameraLook);
+			viewMatrix = glm::lookAt(cameraPosGlobal, cameraLook, glm::vec3(0.0, 1.0, 0.0));
+			cameraPos = cameraPosGlobal;
+		}
+		else {
+			cameraPosGlobal = glm::vec3(1.0, 5.0, 4.0);
+			cameraLook = glm::vec3(1.5f);
+			//cameraLook = normalize(cameraLook);
+			viewMatrix = glm::lookAt(cameraPosGlobal, cameraLook, glm::vec3(0.0, 1.0, 0.0));
+			cameraPos = cameraPosGlobal;
+		}
 	}
 	else if (stateInfo.carCameraFlag) {
 		cameraPosGlobal = car->getCarPos();
 		cameraPosGlobal.y += 2;
 		cameraLook = car->getCarLook();
 		//cameraLook = normalize(cameraLook);
-		std::cout << cameraLook.x << " " << cameraLook.y << " " << cameraLook.z << std::endl;
 		viewMatrix = glm::lookAt(cameraPosGlobal, cameraLook+cameraPosGlobal, glm::vec3(0.0, 1.0, 0.0));
-	}
-	else {
 		cameraPos = cameraPosGlobal;
+	} 
+	else if (stateInfo.cameraCurve) {
+		cameraPosGlobal = countPositionOnCurve(tGlobal);
+		cameraLook = curveDirection;
+
+		viewMatrix = glm::lookAt(cameraPosGlobal, cameraLook + cameraPosGlobal, glm::vec3(0.0, 1.0, 0.0));
+		tGlobal += 0.01f;
+	} else {
 		direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
 		direction.y = sin(glm::radians(pitch));
 		direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
 		cameraLook = glm::normalize(direction);
-
 		viewMatrix = glm::lookAt(cameraPos, cameraPos + cameraLook, cameraUp);
 		cameraPosGlobal = cameraPos;
 	}
@@ -677,6 +766,7 @@ void drawScene(void)
 	glUniform1i(commonShaderProgram.locations.isPointLight, stateInfo.isPointLight);
 
 	glUniform1f(commonShaderProgram.locations.fogHeight, stateInfo.fogHeight);
+	movie->fogHeight = stateInfo.fogHeight;
 	glUniform1f(commonShaderProgram.locations.alphaChannel, 1);
 	float dirX = sin(time) * radius;
 	float dirY = cos(time) * radius;
@@ -699,6 +789,9 @@ void drawScene(void)
 
 	//glUseProgram(0);
 	projectionMatrix = glm::perspective(glm::radians(60.0f), float(glutGet(GLUT_WINDOW_WIDTH)) / float(glutGet(GLUT_WINDOW_HEIGHT)), 0.1f, 100.0f);
+	//TODO testing
+	//((ComplexMesh*)objects[objects.size() - 1])->chPosition(objPos);
+	//((ComplexMesh*)objects[objects.size() - 1])->chScale(glm::vec3(objSc));
 	for (ObjectInstance* object : objects) {   // for (auto object : objects) {
 		if (object != nullptr)
 			object->draw(viewMatrix, projectionMatrix, glm::vec3(1.0f, 1.0f, 1.0f), sunPos, cameraPosGlobal, cameraLook, stateInfo.fog);
@@ -718,12 +811,17 @@ void drawScene(void)
 	if (!stateInfo.fog) {
 		drawSkybox();
 	}
-	else {
+	if(stateInfo.text) {
 		characterDraw->draw("test Text", 100.0f, 100.0f, 1.0f, glm::vec3(1.0f));
 	}
 	glUseProgram(commonShaderProgram.program);
-	glUniform1f(commonShaderProgram.locations.alphaChannel, 0.2);
-	//TODO place for transparent objects
+	glUniform1f(commonShaderProgram.locations.alphaChannel, stateInfo.transparency);
+	// place for transparent objects
+	glUniform3f(commonShaderProgram.locations.ambientM, 0.1f, 0.1f, 0.1f);
+	glUniform3f(commonShaderProgram.locations.diffuseM, 1.0f, 1.0f, 1.0f);
+	glUniform3f(commonShaderProgram.locations.specularM, 1.0f, 1.0f, 1.0f);
+	glUniform1f(commonShaderProgram.locations.shininessM, 64.0f);
+	transparent->draw(viewMatrix, projectionMatrix, glm::vec3(1.0f, 1.0f, 1.0f), sunPos, cameraPosGlobal, cameraLook, stateInfo.fog);
 	glUniform1f(commonShaderProgram.locations.alphaChannel, 1);
 	glDisable(GL_STENCIL_TEST);
 	if(stateInfo.blood)
@@ -733,6 +831,7 @@ void drawScene(void)
 	glEnable(GL_STENCIL_TEST);
 }
 
+// Clicking on object in scene and doing actions if object has one
 void pick(int x, int y) {
 	//glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	//glClearStencil(0);
@@ -746,12 +845,12 @@ void pick(int x, int y) {
 
 	unsigned char id;
 	glReadPixels(x, y, 1, 1, GL_STENCIL_INDEX, GL_UNSIGNED_BYTE, &id);
-	std::cout << x << " " << y << " " << (int)id << std::endl;
+	//std::cout << x << " " << y << " " << (int)id << std::endl;
 
 	switch (id) {
 		case 1:
 			stateInfo.carCameraFlag = true;
-			std::cout << "click" << std::endl;
+			//std::cout << "click" << std::endl;
 			break;
 		case 2:
 			SUN_MOTION_FLAG = !SUN_MOTION_FLAG;
@@ -823,7 +922,8 @@ void keyboardCb(unsigned char keyPressed, int mouseX, int mouseY) {
 			break;
 		case 'c':
 			std::cout << "C pressed" << std::endl;
-			ROTATION_FLAG = !ROTATION_FLAG;
+			stateInfo.freeCamera = !stateInfo.freeCamera;
+			stateInfo.cameraCurve = false;
 			break;
 		case 'l':
 			std::cout << "Sun stopped" << std::endl;
@@ -844,7 +944,7 @@ void keyboardCb(unsigned char keyPressed, int mouseX, int mouseY) {
 			break;
 		case 'z':
 			stateInfo.drag = !stateInfo.drag;
-			std::cout << "drag " << stateInfo.menu << std::endl;
+			//std::cout << "drag " << stateInfo.menu << std::endl;
 			break;
 		default:
 			break;
@@ -886,6 +986,14 @@ void keyboardUpCb(unsigned char keyReleased, int mouseX, int mouseY) {
 void specialKeyboardCb(int specKeyPressed, int mouseX, int mouseY) {
 	if (TwEventSpecialGLUT(specKeyPressed, mouseX, mouseY))
 		return;
+
+	if (specKeyPressed == GLUT_KEY_F1) {
+		stateInfo.menu = !stateInfo.menu;
+		if (stateInfo.menu)
+			TwDefine(" Menu iconified=false");
+		else
+			TwDefine(" Menu iconified=true");
+	}
 }
 
 void specialKeyboardUpCb(int specKeyReleased, int mouseX, int mouseY) {
@@ -965,7 +1073,7 @@ void passiveMouseMotionCb(int mouseX, int mouseY) {
 	// create display event to redraw window contents if needed (and not handled in the timer callback)
 	// glutPostRedisplay();
 
-	if (!ROTATION_FLAG && !stateInfo.drag) {
+	if (stateInfo.freeCamera && !stateInfo.drag) {
 		//inspitation https://learnopengl.com/Getting-started/Camera
 		/*std::cout << "Mouse x: " << mouseX << std::endl;
 		std::cout << "Mouse y: " << mouseY << std::endl;*/
@@ -1018,11 +1126,11 @@ void timerCb(int)
 	if (keys['w']) {
 		//std::cout << "w pressed" << std::endl;
 		cameraPos += direction;
+		std::cout << cameraPos.x << " " << cameraPos.y << " " << cameraPos.z << std::endl;
 		if(cameraPos.x > stateInfo.worldBorderX || cameraPos.x < -stateInfo.worldBorderX ||
 			cameraPos.z > stateInfo.worldBorderZ || cameraPos.z < -stateInfo.worldBorderZ ||
-			cameraPos.y < stateInfo.worldBorderY || cameraPos.y > stateInfo.worldBorderY+500)
+			cameraPos.y < stateInfo.worldBorderY || cameraPos.y > stateInfo.worldBorderYUp)
 			cameraPos -= direction;
-
 	}
 
 	if (keys['s']) {
@@ -1030,7 +1138,7 @@ void timerCb(int)
 		cameraPos -= direction;
 		if (cameraPos.x > stateInfo.worldBorderX || cameraPos.x < -stateInfo.worldBorderX ||
 			cameraPos.z > stateInfo.worldBorderZ || cameraPos.z < -stateInfo.worldBorderZ ||
-			cameraPos.y < stateInfo.worldBorderY || cameraPos.y > stateInfo.worldBorderY + 500)
+			cameraPos.y < stateInfo.worldBorderY || cameraPos.y > stateInfo.worldBorderYUp)
 		cameraPos += direction;
 
 	}
@@ -1041,7 +1149,7 @@ void timerCb(int)
 		cameraPos += direction;
 		if (cameraPos.x > stateInfo.worldBorderX || cameraPos.x < -stateInfo.worldBorderX ||
 			cameraPos.z > stateInfo.worldBorderZ || cameraPos.z < -stateInfo.worldBorderZ ||
-			cameraPos.y < stateInfo.worldBorderY || cameraPos.y > stateInfo.worldBorderY + 500)
+			cameraPos.y < stateInfo.worldBorderY || cameraPos.y > stateInfo.worldBorderYUp)
 		cameraPos -= direction;
 	}
 
@@ -1050,7 +1158,7 @@ void timerCb(int)
 			cameraPos -= direction;
 		if (cameraPos.x > stateInfo.worldBorderX || cameraPos.x < -stateInfo.worldBorderX ||
 			cameraPos.z > stateInfo.worldBorderZ || cameraPos.z < -stateInfo.worldBorderZ ||
-			cameraPos.y < stateInfo.worldBorderY || cameraPos.y > stateInfo.worldBorderY + 500)
+			cameraPos.y < stateInfo.worldBorderY || cameraPos.y > stateInfo.worldBorderYUp)
 			cameraPos += direction;
 	}
 	
@@ -1073,19 +1181,64 @@ void TW_CALL reloadPropertiesCB(void *p) {
 	loadBannerTexture();
 	loadBloodTexture();
 	car->updateCurve(properties->getKnotsBezier(), properties->getHandlesBezier());
+	knots = properties->getKnotsCatmull();
+	handles = properties->getHandlesCatmull();
 }
 
+void TW_CALL stCam1(void* p) {
+	stateInfo.staticCam1 = true;
+	stateInfo.staticCam2 = false;
+	stateInfo.freeCamera = false;
+	stateInfo.cameraCurve = false;
+	//stateInfo.carCameraFlag = false;
+}
+
+void TW_CALL stCam2(void* p) {
+	stateInfo.staticCam2 = true;
+	stateInfo.staticCam1 = false;
+	stateInfo.freeCamera = false;
+	stateInfo.cameraCurve = false;
+	//stateInfo.carCameraFlag = false;
+}
+
+void TW_CALL curveCam(void* p) {
+	stateInfo.cameraCurve = true;
+	stateInfo.staticCam1 = false;
+	stateInfo.staticCam2 = false;
+	stateInfo.carCameraFlag = false;
+	stateInfo.freeCamera = true;
+	//stateInfo.carCameraFlag = false;
+}
+
+//TwStructMember Vector3fMembers[] = {
+//	{ "x", TW_TYPE_FLOAT, offsetof(Vector3f, x), "" },
+//	{ "y", TW_TYPE_FLOAT, offsetof(Vector3f, y), "" },
+//	{ "z", TW_TYPE_FLOAT, offsetof(Vector3f, z), "" }
+//};
+//
+//auto TW_TYPE_OGLDEV_VECTOR3F = TwDefineStruct("Vector3f", Vector3fMembers, 3, sizeof(Vector3f), NULL, NULL);
+
+// initiate AntTweaksBar menu and elements inside menu
 void initMenu() {
 	menuBar = TwNewBar("Menu");
 	TwDefine("Menu size='240 420' color='20 20 20' fontsize=3 iconified=true");
 	//TwAddButton(menuBar, "BloodHUD", bloodCB, NULL, " label='Blood HUD' ");
 	TwAddVarRW(menuBar, "BloodHUD", TW_TYPE_BOOLCPP, &stateInfo.blood, " label='Blood HUD' ");
 	TwAddVarRW(menuBar, "Banner", TW_TYPE_BOOLCPP, &stateInfo.banner, " label='Banner' ");
+	TwAddVarRW(menuBar, "Text", TW_TYPE_BOOLCPP, &stateInfo.text, " label='Text' ");
+	TwAddVarRW(menuBar, "Fog", TW_TYPE_BOOLCPP, &stateInfo.fog, " label='Fog' ");
 	TwAddVarRW(menuBar, "SunMotion", TW_TYPE_BOOLCPP, &SUN_MOTION_FLAG, " label='Sun Motion' ");
-	TwAddVarRW(menuBar, "staticCam1", TW_TYPE_BOOLCPP, &stateInfo.staticCam1, " label='Static Camera 1' ");
-	TwAddVarRW(menuBar, "staticCam2", TW_TYPE_BOOLCPP, &stateInfo.staticCam2, " label='Static Camera 2' ");
+	TwAddButton(menuBar, "staticCam1", stCam1, NULL, " label='Static Camera 1' ");
+	TwAddButton(menuBar, "staticCam2", stCam2, NULL, " label='Static Camera 2' ");
+	TwAddButton(menuBar, "cameraCurve", curveCam, NULL, " label='Camera Curve' ");
 	TwAddVarRW(menuBar, "CarCamera", TW_TYPE_BOOLCPP, &stateInfo.carCameraFlag, " label='Car Camera' ");
 	TwAddVarRW(menuBar, "FogHeight", TW_TYPE_FLOAT, &stateInfo.fogHeight, " label='Fog Height' step=0.10 min=0.001");
+	TwAddVarRW(menuBar, "CameraAcc", TW_TYPE_FLOAT, &stateInfo.cameraAcc, " label='CameraAcceleration' step=0.10 min=1 max=20");
+	TwAddVarRW(menuBar, "Transp", TW_TYPE_FLOAT, &stateInfo.transparency, " label='Transparency' step=0.1 min=0.001 max=1");
+	TwAddVarRW(menuBar, "Pos1", TW_TYPE_FLOAT, &objPos.x, " label='Position X' step=0.5 min=-1000 max=1000");
+	TwAddVarRW(menuBar, "Pos2", TW_TYPE_FLOAT, &objPos.y, " label='Position Y' step=0.5 min=-1000 max=1000");
+	TwAddVarRW(menuBar, "Pos3", TW_TYPE_FLOAT, &objPos.z, " label='Position Z' step=0.5 min=-1000 max=1000");
+	TwAddVarRW(menuBar, "Scale", TW_TYPE_FLOAT, &objSc, " label='Scale' step=0.01 min=-100 max=100");
 	
 	//light toggle
 	//TwAddSeparator(menuBar, NULL, " label='Light Toggles' ");
@@ -1121,26 +1274,43 @@ void initApplication() {
 		objects.push_back(new Cube(i, &commonShaderProgram, glm::vec3(0.0f, 2.5f, 2.5f), "data/cubeTriangulated.obj"));
 	}*/
 
-	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, 2.5f, 0.0f)));
-	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, 2.5f, 2.5f)));
-	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, 2.5f, -2.5f)));
-	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, 3.5f, 0.0f)));
-	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, 3.5f, 2.5f)));
-	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, 3.5f, -2.5f)));
-	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, 4.5f, 0.0f)));
-	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, 4.5f, 2.5f)));
-	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, 4.5f, -2.5f)));
-	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(-2.5f, 0.0f, 0.0f)));
-	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(-2.5f, -2.5f, 0.0f)));
-	objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, -2.5f, 0.0f)));
+	//objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, 2.5f, 0.0f)));
+	//objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, 2.5f, 2.5f)));
+	//objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, 2.5f, -2.5f)));
+	//objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, 3.5f, 0.0f)));
+	//objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, 3.5f, 2.5f)));
+	//objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, 3.5f, -2.5f)));
+	//objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, 4.5f, 0.0f)));
+	//objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, 4.5f, 2.5f)));
+	//objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, 4.5f, -2.5f)));
+	//objects.push_back(new Cube(&commonShaderProgram, glm::vec3(-2.5f, 0.0f, 0.0f)));
+	//objects.push_back(new Cube(&commonShaderProgram, glm::vec3(-2.5f, -2.5f, 0.0f)));
+	//objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, -2.5f, 0.0f)));
+	objects.push_back(new ComplexMesh(&commonShaderProgram, glm::vec3(0.0f, 6.5f, 0.0f), "data/car.obj"));
+	objects.push_back(new ComplexMesh(&commonShaderProgram, glm::vec3(500.0f, 1.0f, 500.0f), "data/house_textured/house_textured.obj", glm::vec3(0.01f)));
+	objects.push_back(new ComplexMesh(&commonShaderProgram, glm::vec3(50.0f, 1.0f, 94.0f), "data/gasCylinders/GasCylinders.obj", glm::vec3(0.1f)));
+	objects.push_back(new ComplexMesh(&commonShaderProgram, glm::vec3(163.5f, 1.0f, 141.5f), "data/BlastFurnace02/BlastFurnace02.obj", glm::vec3(0.05f)));
+	objects.push_back(new ComplexMesh(&commonShaderProgram, glm::vec3(-4.5f, 0.001f, 4.0f), "data/old_wooden_church/old_wooden_church.obj", glm::vec3(2.0f)));
+	objects.push_back(new ComplexMesh(&commonShaderProgram, glm::vec3(220.0f, 0.5f, -150.0f), "data/Gas tower without ad/GasTowerWithoutText.obj", glm::vec3(0.1f)));
+	objects.push_back(new ComplexMesh(&commonShaderProgram, glm::vec3(89.0f, -0.5f, 17.5f), "data/GrainStorage02/GrainStorage02.obj", glm::vec3(0.32f)));
+	objects.push_back(new ComplexMesh(&commonShaderProgram, glm::vec3(1.0f, 0.0f, -27.0f), "data/HorusiceTrainStation/HorusiceTrainStation.obj", glm::vec3(1.0f)));
+
+	transparent = new DefaultObject(&commonShaderProgram, glm::vec3(2.0f, 0.0f, 3.0f), "data/transparent.obj", "data/transparentMat.png");
+	//transparent->textureName = "data/transparentMat.png";
+	std::cout << "Transparent Object rendered" << std::endl;
 	sun = new Sun(&sunShaderProgram, sunPos);
 	//sun->addChildren(new Cube(&commonShaderProgram, glm::vec3(3.0f, 3.0f, 3.0f)));
+	std::cout << "Sun rendered" << std::endl;
 	Planet* pl = new Planet(&commonShaderProgram, glm::vec3(0.0f), glm::vec3(5,1,2), 3.0f, 1.5f);
 	pl->addChildren(new Planet(&commonShaderProgram, glm::vec3(0.0f), glm::vec3(2,0, 10), 2.0f, 2.0f));
 	sun->addChildren(pl);
+	std::cout << "Planets Rendered" << std::endl;
 	car = new Car(&commonShaderProgram, glm::vec3(4.0f, 1.5f, 2.0f));
+	std::cout << "Car Rendered" << std::endl;
 	car->updateCurve(properties->getKnotsBezier(), properties->getHandlesBezier());
+	std::cout << "c" << std::endl;
 	terrain = new Terrain(&commonShaderProgram, stateInfo.worldBorderZ, stateInfo.worldBorderX);
+	std::cout << "Terrain Generated" << std::endl;
 	// objects.push_back(new SingleMesh(&commonShaderProgram));
 	//(objects[0])->loadObjFromFile("data/cubeTriangulated.obj");
 
@@ -1180,9 +1350,12 @@ int main(int argc, char** argv) {
 	stateInfo.blood = false;
 	stateInfo.banner = false;
 	stateInfo.menu = false;
+	stateInfo.text = false;
 	stateInfo.drag = false;
 	stateInfo.dragCamera = false;
+	stateInfo.freeCamera = false;
 	stateInfo.carCameraFlag = false;
+	stateInfo.cameraCurve = false;
 
 	stateInfo.staticCam1 = true;
 	stateInfo.staticCam2 = false;
@@ -1191,11 +1364,19 @@ int main(int argc, char** argv) {
 	stateInfo.isDirLight = false;
 	stateInfo.isPointLight = true;
 
+	stateInfo.transparency = 0.3;
+	stateInfo.cameraAcc = 2.5f;
+
 	properties = new Properties();
 	stateInfo.windowHeight = properties->getWinH();
 	stateInfo.windowWidth = properties->getWinW();
+
+	knots = properties->getKnotsCatmull();
+	handles = properties->getHandlesCatmull();
+
 	stateInfo.worldBorderX = 50;
-	stateInfo.worldBorderY = 2000;
+	stateInfo.worldBorderY = 0;
+	stateInfo.worldBorderYUp = 500;
 	stateInfo.worldBorderZ = 50;
 
 	stateInfo.sensetivity = 0.1f;

@@ -86,6 +86,7 @@ typedef struct _ObjectGeometry {
 	GLuint        elementBufferObject;  ///< identifier for the element buffer object
 	GLuint        vertexArrayObject;    ///< identifier for the vertex array object
 	unsigned int  numTriangles;         ///< number of triangles in the mesh
+	unsigned int  numVertices;         ///< number of vertices in the mesh
 	GLuint        texture;				///< texture id
 	std::vector<float> vertices;
 	std::vector<unsigned int> indexes;
@@ -177,12 +178,171 @@ public:
 		}
 	}
 
+	virtual void loadObjFromFileAssimp(const aiMesh* mesh, const aiMaterial* material, const std::string& file)
+	{
+		std::vector<float> vertices;
+		std::vector<float> normals;
+		std::vector<float> tex;
+
+		vertices.reserve(mesh->mNumVertices * 3);
+		for (int vi = 0; vi < mesh->mNumVertices; ++vi)
+		{
+			auto v = mesh->mVertices[vi];
+			vertices.push_back(v.x);
+			vertices.push_back(v.y);
+			vertices.push_back(v.z);
+		}
+
+		if (mesh->mNormals)
+		{
+			normals.reserve(mesh->mNumVertices * 3);
+			for (int ni = 0; ni < mesh->mNumVertices; ++ni)
+			{
+				auto n = mesh->mNormals[ni];
+				normals.push_back(n.x);
+				normals.push_back(n.y);
+				normals.push_back(n.z);
+			}
+		}
+
+		if (mesh->mTextureCoords[0])
+		{
+			tex.reserve(mesh->mNumVertices * 2);
+			for (int ti = 0; ti < mesh->mNumVertices; ++ti)
+			{
+				auto t = mesh->mTextureCoords[0][ti];
+				tex.push_back(t.x);
+				tex.push_back(t.y);
+			}
+		}
+
+		geometry->indexes.resize(mesh->mNumFaces * 3);
+		for (int i = 0; i < mesh->mNumFaces; ++i)
+		{
+			memcpy(geometry->indexes.data() + i * 3, mesh->mFaces[i].mIndices, 3 * sizeof(unsigned int));
+		}
+
+		geometry->numTriangles = mesh->mNumFaces;
+		geometry->numVertices = mesh->mNumVertices;
+
+		int off = 0;
+		geometry->vertices.resize(vertices.size() + normals.size() + tex.size());
+		memcpy(geometry->vertices.data() + off, vertices.data(), vertices.size() * sizeof(float));
+		off += vertices.size();
+		memcpy(geometry->vertices.data() + off, normals.data(), normals.size() * sizeof(float));
+		off += normals.size();
+		memcpy(geometry->vertices.data() + off, tex.data(), tex.size() * sizeof(float));
+
+		if (material->GetTextureCount(aiTextureType_DIFFUSE) > 0)
+		{
+			aiString texPath;
+			aiReturn texFound = material->GetTexture(aiTextureType_DIFFUSE, 0, &texPath);
+
+			size_t found = file.find_last_of("/\\");
+			std::string textureName = file.substr(0, found + 1) + texPath.data;
+			geometry->texture = pgr::createTexture(textureName);
+		}
+		else {
+			//geometry->texture = pgr::createTexture();
+		}
+	}
+
 	virtual void loadObjFromFileAssimp(std::string path) {
 		Assimp::Importer importer;
 
 		importer.SetPropertyInteger(AI_CONFIG_PP_PTV_NORMALIZE, 1);
-		const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_JoinIdenticalVertices | aiProcess_TransformUVCoords | 0);
+		const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_JoinIdenticalVertices | aiProcess_TransformUVCoords);
 
+		assert(scene != nullptr);
+		assert(scene->mNumMeshes > 0);
+
+		int numVert = 0;
+		int numFace = 0;
+
+		for (int i = 0; i < 1; ++i)
+		{
+			numVert += scene->mMeshes[i]->mNumVertices;
+			numFace += scene->mMeshes[i]->mNumFaces;
+		}
+
+		//geometry->vertices.reserve(numVert);
+		//geometry->vertices.resize(numVert);
+
+		std::vector<glm::vec3> vert;
+		std::vector<glm::vec3> norm;
+		std::vector<glm::vec2> tex;
+
+		//vert.resize(numVert);
+		//norm.resize(numVert);
+		//tex.resize(numVert);
+		vert.reserve(numVert);
+		norm.reserve(numVert);
+		tex.reserve(numVert);
+
+		geometry->indexes.resize(numFace * 3);
+		geometry->numTriangles = numFace;
+		geometry->numVertices = numVert;
+
+		size_t offset = 0;
+		for (int mi = 0; mi < 1; ++mi)
+		{
+			auto m = scene->mMeshes[mi];
+
+			for (int i = 0; i < m->mNumVertices; ++i)
+			{
+				auto v = m->mVertices[i];
+				vert.emplace_back(v.x, v.y, v.z);
+			}
+
+			if (m->mNormals)
+			{
+				for (int i = 0; i < m->mNumVertices; ++i)
+				{
+					auto vn = m->mNormals[i];
+					norm.emplace_back(vn.x, vn.y, vn.z);
+				}
+			}
+
+			if (m->mTextureCoords[0])
+			{
+				for (int i = 0; i < m->mNumVertices; ++i)
+				{
+					auto vt = m->mTextureCoords[0][i];
+					tex.emplace_back(vt.x, vt.y);
+				}
+			}
+
+			for (int i = 0; i < m->mNumFaces; ++i)
+			{
+				auto f = m->mFaces[i];
+				memcpy(geometry->indexes.data() + offset + i * 3, m->mFaces[i].mIndices, 3 * sizeof(unsigned int));
+			}
+			offset += m->mNumFaces * 3;
+		}
+
+		std::string texName;
+		auto mat = scene->mMaterials[scene->mMeshes[0]->mMaterialIndex];
+		if (mat->GetTextureCount(aiTextureType_DIFFUSE) > 0)
+		{
+			aiString texPath;
+			aiReturn texFound = mat->GetTexture(aiTextureType_DIFFUSE, 0, &texPath); // AI_SUCCESS
+
+			size_t found = path.find_last_of("/\\");
+			texName = path.substr(0, found + 1) + texPath.data;
+
+			geometry->texture = pgr::createTexture(texName);
+		}
+		else
+		{
+			geometry->texture = pgr::createTexture("data/texture_test_small.jpg");
+		}
+
+		geometry->vertices.resize(vert.size() * 3 + norm.size() * 3 + tex.size() * 2);
+		memcpy(geometry->vertices.data(), vert.data(), vert.size() * sizeof(float) * 3);
+		int off = vert.size() * 3;
+		memcpy(geometry->vertices.data() + off, norm.data(), norm.size() * sizeof(float) * 3);
+		off += norm.size() * 3;
+		memcpy(geometry->vertices.data() + off, tex.data(), tex.size() * sizeof(float) * 2);
 
 	}
 
@@ -317,7 +477,6 @@ public:
 
 		geometry->numTriangles = facesNum;
 	}
-
 
 };
 

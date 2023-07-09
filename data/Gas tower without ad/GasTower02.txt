@@ -1,0 +1,12 @@
+#DownloadModelFormat: OBJ
+#GeometryFile: GasTowerWithoutText.obj
+#MaterialFile: GasTowerWithoutText.mtl
+#PreviewFile: preview02.png
+#OtherFiles: GasTower02.blend
+#DownloadedFromURL:
+#DateOfDownload:
+#CreatedBy: Dominik Chaloupka
+#CreatedIn: Blender v2.79
+#UploadedBy: Dominik Chaloupka
+#Description: Gas tower located in Vitkovice
+#NumberOfVertices: 2 029

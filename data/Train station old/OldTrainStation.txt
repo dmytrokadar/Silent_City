@@ -1,0 +1,12 @@
+#DownloadModelFormat: OBJ
+#GeometryFile: OldTrainStation.obj
+#MaterialFile: OldTrainStation.mtl
+#PreviewFile: Preview.png
+#OtherFiles: OldTrainStation.blend
+#DownloadedFromURL:
+#DateOfDownload:
+#CreatedBy: Dominik Chaloupka
+#CreatedIn: Blender v2.79
+#UploadedBy: Dominik Chaloupka
+#Description: Infrastructure building from Veseli nad Luznici train station
+#NumberOfVertices: 3 985

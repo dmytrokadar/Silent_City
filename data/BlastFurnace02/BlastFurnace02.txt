@@ -1,0 +1,12 @@
+#DownloadModelFormat: OBJ
+#GeometryFile: BlastFurnace02.obj
+#MaterialFile: BlastFurnace02.mtl
+#PreviewFile: Preview02.png
+#OtherFiles: 
+#DownloadedFromURL:
+#DateOfDownload:
+#CreatedBy: Dominik Chaloupka
+#CreatedIn: Blender v2.79
+#UploadedBy: Dominik Chaloupka
+#Description: Blast furnace from Vitkovice steel works
+#NumberOfVertices: 720

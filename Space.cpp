@@ -186,8 +186,15 @@ Planet::Planet(ShaderProgram* shdrPrg, const glm::vec3 pos, glm::vec3 axis, floa
 
 	loadObjFromFile("data/sphere.obj");
 
+	geometry->texture = pgr::createTexture("data/leafy_grass_diff_4k.jpg");
+	if (geometry->texture == 0) {
+		std::cout << "Texture not loaded!" << std::endl;
+	}
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+
 	//geometry->numTriangles = 12;
-	std::cout << geometry->numTriangles << std::endl;
+	//std::cout << geometry->numTriangles << std::endl;
 	geometry->elementBufferObject = 0;
 
 	glGenVertexArrays(1, &geometry->vertexArrayObject);

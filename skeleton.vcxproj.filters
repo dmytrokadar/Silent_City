@@ -8,6 +8,8 @@
     <ClCompile Include="Barrel.cpp" />
     <ClCompile Include="CharactersDraw.cpp" />
     <ClCompile Include="Space.cpp" />
+    <ClCompile Include="perlin.cpp" />
+    <ClCompile Include="ComplexMesh.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cube.h" />
@@ -19,6 +21,8 @@
     <ClInclude Include="Properties.h" />
     <ClInclude Include="Space.h" />
     <ClInclude Include="SunVert.h" />
+    <ClInclude Include="perlin.h" />
+    <ClInclude Include="ComplexMesh.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Shaders">

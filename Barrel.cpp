@@ -275,7 +275,10 @@ void Terrain::generateTerrain() {
 	for (int i = -height; i < height; i++) {
 		for (int j = -width; j < width; j++) {
 			vertices.push_back(j);
-			vertices.push_back(0);
+			//if ((j < width && j > -width) && (i < height && i > -height))
+				vertices.push_back(0);
+			//else
+				//vertices.push_back(perlin->Get(j, i));
 			vertices.push_back(i);
 		}
 	}
@@ -321,11 +324,12 @@ void Terrain::generateTerrain() {
 	geometry->numTriangles = vertices.size() / 3;
 }
 
-Terrain::Terrain(ShaderProgram* shdrPrg, int h, int w) : ObjectInstance(shdrPrg)
+Terrain::Terrain(ShaderProgram* shdrPrg, int h, int w, int hL, int wL) : ObjectInstance(shdrPrg)
 {
 	geometry = new ObjectGeometry;
 	height = h;
 	width = w;
+	perlin = new Perlin(2, 0.01f, 10.0f, 1010);
 	
 	generateTerrain();
 
@@ -399,7 +403,10 @@ void Animation::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMat
 
 		glm::mat4 model = glm::translate(globalModelMatrix, position);
 		glUniformMatrix4fv(shaderProgram->locations.PVMmatrix, 1, GL_FALSE, glm::value_ptr(projectionMatrix * viewMatrix * model));
-
+		glUniformMatrix4fv(shaderProgram->locations.model, 1, GL_FALSE, glm::value_ptr(model));
+		glUniform3f(shaderProgram->locations.cameraPos, cameraPos.x, cameraPos.y, cameraPos.z);
+		glUniform1f(shaderProgram->locations.fogHeight, fogHeight);
+		glUniform1i(shaderProgram->locations.isFog, isFog);
 
 		glBindVertexArray(geometry->vertexArrayObject);
 		glActiveTexture(GL_TEXTURE5);
@@ -428,8 +435,13 @@ void Animation::loadShader() {
 
 	// other attributes and uniforms
 	animShaderProgram.locations.PVMmatrix = glGetUniformLocation(animShaderProgram.program, "PVM");
+	animShaderProgram.locations.model = glGetUniformLocation(animShaderProgram.program, "model");
 	animShaderProgram.locations.sampl = glGetUniformLocation(animShaderProgram.program, "texSampler");
 	animShaderProgram.locations.segment = glGetUniformLocation(animShaderProgram.program, "segment");
+
+	animShaderProgram.locations.cameraPos = glGetUniformLocation(animShaderProgram.program, "cameraPos");
+	animShaderProgram.locations.fogHeight = glGetUniformLocation(animShaderProgram.program, "fogHeight");
+	animShaderProgram.locations.isFog = glGetUniformLocation(animShaderProgram.program, "isFog");
 
 	assert(animShaderProgram.locations.PVMmatrix != -1);
 	assert(animShaderProgram.locations.position != -1);

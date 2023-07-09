@@ -155,7 +155,9 @@
   <ItemGroup>
     <ClCompile Include="Barrel.cpp" />
     <ClCompile Include="CharactersDraw.cpp" />
+    <ClCompile Include="ComplexMesh.cpp" />
     <ClCompile Include="cube.cpp" />
+    <ClCompile Include="perlin.cpp" />
     <ClCompile Include="singlemesh.cpp" />
     <ClCompile Include="kadardmy.cpp" />
     <ClCompile Include="Space.cpp" />
@@ -164,8 +166,10 @@
   <ItemGroup>
     <ClInclude Include="Barrel.h" />
     <ClInclude Include="CharactersDraw.h" />
+    <ClInclude Include="ComplexMesh.h" />
     <ClInclude Include="cube.h" />
     <ClInclude Include="object.h" />
+    <ClInclude Include="perlin.h" />
     <ClInclude Include="Properties.h" />
     <ClInclude Include="singlemesh.h" />
     <ClInclude Include="Space.h" />

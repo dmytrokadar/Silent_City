@@ -37,6 +37,8 @@ public:
 			windowWidth = data.value("winW", 800);
 			windowHeight = data.value("winH", 600);
 			folder = data.value("skyboxF", "Skybox");
+			bloodI = data.value("bloodBanner", "data/PainHud.png");
+			bannerI = data.value("banner", "data/gameOver.png");
 			
 			auto knotsB = data.at("knotsBezier");
 			for (auto& knot : knotsB) {
