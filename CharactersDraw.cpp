@@ -6,13 +6,11 @@
 CharactersDraw::CharactersDraw(ShaderProgram* shdrPrg, float monitorWidth, float monitorHeight) : shaderProgram(shdrPrg) {
 	geometry = new ObjectGeometry;
 
-	
-
 	assert(!FT_Init_FreeType(&ft));
 
 	assert(!FT_New_Face(ft, "data/fonts/impact.ttf", 0, &face));
 
-	FT_Set_Pixel_Sizes(face, 0, 48);
+	FT_Set_Pixel_Sizes(face, 0, 60);
 	mapAllCharacters();
 
 	FT_Done_Face(face);
@@ -101,11 +99,7 @@ void CharactersDraw::draw(std::string text, float posX, float posY, float scale,
 
 void CharactersDraw::mapAllCharacters() {
 	for (unsigned char i = 0; i < 128; i++) {
-		if (FT_Load_Char(face, i, FT_LOAD_RENDER))
-		{
-			std::cout << "ERROR::FREETYTPE: Failed to load Glyph" << std::endl;
-			continue;
-		}
+		assert(!FT_Load_Char(face, i, FT_LOAD_RENDER));
 
 		FT_Render_Glyph(face->glyph, FT_RENDER_MODE_NORMAL);
 		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);

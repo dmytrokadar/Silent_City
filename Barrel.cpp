@@ -400,8 +400,8 @@ void Animation::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMat
 {
 	if (initialized && (shaderProgram != nullptr)) {
 		glUseProgram(shaderProgram->program);
-
-		glm::mat4 model = glm::translate(globalModelMatrix, position);
+		glm::mat4 model = glm::rotate(globalModelMatrix, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		model = glm::translate(model, position);
 		glUniformMatrix4fv(shaderProgram->locations.PVMmatrix, 1, GL_FALSE, glm::value_ptr(projectionMatrix * viewMatrix * model));
 		glUniformMatrix4fv(shaderProgram->locations.model, 1, GL_FALSE, glm::value_ptr(model));
 		glUniform3f(shaderProgram->locations.cameraPos, cameraPos.x, cameraPos.y, cameraPos.z);
@@ -458,7 +458,7 @@ Animation::Animation()
 	//ObjectInstance(animShaderProgram);
 	glUseProgram(shaderProgram->program);
 
-	position = glm::vec3(0.0f, 5.0f, 0.0f);
+	position = glm::vec3(-9.8f, 1.7f, -18.6f);
 
 	static const float tvScreen[] = {
 		1.0f, 1.0f, 0.0f,

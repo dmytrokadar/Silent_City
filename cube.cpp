@@ -539,6 +539,7 @@ DefaultObject::~DefaultObject() {
 
 void Car::update(float elapsedTime, const glm::mat4* parentModelMatrix) {
 	position = countPositionOnCurve(tGlobal);
+	ComplexMesh::update(position, -direction);
 	//glm::mat4 model = glm::inverse(glm::lookAt(position, position + direction, glm::vec3(0.0f, 1.0f, 0.0f)));
 	tGlobal += 0.01f;
 	ComplexMesh::update(elapsedTime, parentModelMatrix, position);
@@ -549,43 +550,54 @@ void Car::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix, c
 	/*position = countPositionOnCurve(tGlobal);
 	tGlobal += 0.05f;*/
 
-	glUniform3f(shaderProgram->locations.ambientM, 0.1f, 0.1f, 0.1f);
-	glUniform3f(shaderProgram->locations.diffuseM, 1.0f, 1.0f, 1.0f);
-	glUniform3f(shaderProgram->locations.specularM, 0.8f, 0.8f, 0.8f);
-	glUniform1f(shaderProgram->locations.shininessM, 40.0f);
+	//glUniform3f(shaderProgram->locations.ambientM, 0.1f, 0.1f, 0.1f);
+	//glUniform3f(shaderProgram->locations.diffuseM, 1.0f, 1.0f, 1.0f);
+	//glUniform3f(shaderProgram->locations.specularM, 0.8f, 0.8f, 0.8f);
+	//glUniform1f(shaderProgram->locations.shininessM, 40.0f);
 
-	ComplexMesh::draw(viewMatrix, projectionMatrix, light, lightPos, cameraPos, cameraDirection, isFog);
-	//if (initialized && (shaderProgram != nullptr)) {
-	//	CHECK_GL_ERROR();
-	//	glUseProgram(shaderProgram->program);
+	//ComplexMesh::draw(viewMatrix, projectionMatrix, light, lightPos, cameraPos, cameraDirection, isFog);
+	//ComplexMesh::draw(viewMatrix, projectionMatrix, light, lightPos, cameraPos, cameraDirection, isFog);	
+	if (initialized && shaderProgram != nullptr) {
+		glUseProgram(shaderProgram->program);
+		glm::mat4 model = glm::scale(globalModelMatrix, scale);
+		model = glm::inverse(glm::lookAt(position, position + direction, glm::vec3(0, 1, 0))) * model;
 
-	//	//glm::mat4 model = glm::translate(globalModelMatrix, position);
-	//	glm::mat4 model = glm::inverse(glm::lookAt(position, position+direction, glm::vec3(0.0f, 1.0f, 0.0f)));
-	//	glUniformMatrix4fv(shaderProgram->locations.PVMmatrix, 1, GL_FALSE, glm::value_ptr(projectionMatrix * viewMatrix * model));
-	//	CHECK_GL_ERROR();
+		//model = glm::rotate(model, rotation, glm::vec3(0.0f, 1.0f, 0.0f));
 
-	//	glUniformMatrix4fv(shaderProgram->locations.model, 1, GL_FALSE, glm::value_ptr(model));
-	//	CHECK_GL_ERROR();
-	//	//flashlight
-	//	glUniform1f(shaderProgram->locations.flashlightAngle, glm::radians(20.0f));
-	//	CHECK_GL_ERROR();
-	//	//TODO change to another color than light
-	//	glUniform3f(shaderProgram->locations.flashlightColor, light.x, light.y, light.z);
-	//	CHECK_GL_ERROR();
+		//model = glm::translate(model, position);
+		glUniformMatrix4fv(shaderProgram->locations.PVMmatrix, 1, GL_FALSE, glm::value_ptr(projectionMatrix * viewMatrix * model));
+		glUniformMatrix4fv(shaderProgram->locations.model, 1, GL_FALSE, glm::value_ptr(model));
+		glUniform1f(shaderProgram->locations.flashlightAngle, glm::radians(20.0f));
+		glUniform3f(shaderProgram->locations.flashlightColor, light.x, light.y, light.z);
+		glUniform3f(shaderProgram->locations.ambientM, 0.1f, 0.1f, 0.1f);
+		glUniform3f(shaderProgram->locations.diffuseM, 1.0f, 1.0f, 1.0f);
+		glUniform3f(shaderProgram->locations.specularM, 0.7, 0.7f, 0.7f);
+		glUniform1f(shaderProgram->locations.shininessM, 32.0f);
 
-	//	glActiveTexture(GL_TEXTURE0);
-	//	CHECK_GL_ERROR();
-	//	glBindTexture(GL_TEXTURE_2D, geometry->texture);
-	//	CHECK_GL_ERROR();
-	//	glBindVertexArray(geometry->vertexArrayObject);
-	//	CHECK_GL_ERROR();
-	//	glDrawArrays(GL_TRIANGLES, 0, geometry->numTriangles * 3);
-	//	CHECK_GL_ERROR();
-	//	glBindVertexArray(0);
-	//}
-	//else {
-	//	std::cerr << "Car::draw(): Can't draw, car not initialized properly!" << std::endl;
-	//}
+		glActiveTexture(GL_TEXTURE0);
+		glUniform1i(shaderProgram->locations.sampl, 0);
+		glBindTexture(GL_TEXTURE_2D, geometry->texture);
+		glBindVertexArray(geometry->vertexArrayObject);
+		glDrawElements(GL_TRIANGLES, geometry->indexes.size(), GL_UNSIGNED_INT, 0);
+
+		glBindVertexArray(0);
+	}
+	else {
+		std::cerr << "ComplexMesh::draw(): Can't draw, cube not initialized properly!" << std::endl;
+	}
+
+	for (auto subm : submeshes)
+	{
+		subm->draw(viewMatrix, projectionMatrix, light, lightPos, cameraPos, cameraDirection, isFog);
+	}
+
+	for (auto child : children)
+	{
+		if (child)
+		{
+			child->draw(viewMatrix, projectionMatrix);
+		}
+	}
 }
 
 Car::Car(ShaderProgram* shdrPrg, const glm::vec3 pos, std::string objName) : ComplexMesh(shdrPrg, glm::vec3(0.0f), "data/car.obj", glm::vec3(1.0f), 180.0f), initialized(false)
@@ -598,6 +610,7 @@ Car::Car(ShaderProgram* shdrPrg, const glm::vec3 pos, std::string objName) : Com
 	position = countPositionOnCurve(tGlobal);
 	tGlobal += 0.05f;
 
+	initialized = true;
 	//loadObjFromFile(objName);
 
 	//geometry->texture = pgr::createTexture(TEST_Texture);

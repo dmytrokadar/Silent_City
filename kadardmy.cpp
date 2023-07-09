@@ -73,43 +73,51 @@ ShaderProgram skyboxShaderProgram;
 ShaderProgram sunShaderProgram;
 ShaderProgram textShaderProgram;
 
-GLuint texture;
+//GLuint texture;
 //GLuint bloodTexture;
 
 
 // -----------------------  OpenGL stuff ---------------------------------
 bool keys[256];
 
+//flags
 bool ROTATION_FLAG = true;
 bool SUN_MOTION_FLAG = false;
 bool OVERALAY_FLAG = false;
 float CAMERA_SPEED = 0.1f;
 int ACCELERATION = 5;
 
+// frame delay
 float delayFrame;
+//last frame time
 float lastFrame;
 
+// geometry of banners and geometry
 ObjectGeometry* skyboxGeometry;
 ObjectGeometry* bloodGeometry;
 ObjectGeometry* bannerGeometry;
 
+// camera setup
 glm::vec3 cameraPosGlobal = glm::vec3(0.0f, 0.0f, 3.0f);
 glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
 glm::vec3 cameraLook = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 glm::vec3 direction;
-glm::vec3 curveDirection;
 
+//testing values
 glm::vec3 objPos = glm::vec3(1.0f);
 float objSc = 1.0f;
 
+// control points for curve
 std::vector<glm::vec3> knots;
 std::vector<glm::vec3> handles;
+glm::vec3 curveDirection;
+float tGlobal = 0;
 
-glm::vec3 sunPos = glm::vec3(4.0f, 5.0f, 0.0f);
+// sun position
+glm::vec3 sunPos = glm::vec3(0.0f, -10.0f, 0.0f);
 
 float pitch = 0, yaw = -90.0f;
-float tGlobal = 0;
 //float lastMouseX = WINDOW_WIDTH / 2, lastMouseY = WINDOW_HEIGHT / 2;
 
 glm::mat4 viewMatrix = glm::mat4(1.0f);
@@ -158,16 +166,18 @@ struct StateInfo {
 	
 	glm::vec2 mouseLastPos;
 
+	//camera 
 	int fixedCameraPos;
 	float sensetivity;
 	float sensetivityDrag;
 	float cameraSpeed;
-
 	float cameraAcc;
+
 	float transparency;
 	float fogHeight;
 } stateInfo;
 
+// load shader for most objects
 void loadDefaultShader() {
 	// initializing default shader
 	GLuint shaders[] = {
@@ -232,6 +242,7 @@ void loadDefaultShader() {
 	commonShaderProgram.initialized = true;
 }
 
+// load shader for text
 void loadTextShader() {
 	// initializing default shader
 	GLuint shaders[] = {
@@ -257,6 +268,7 @@ void loadTextShader() {
 	textShaderProgram.initialized = true;
 }
 
+// load texture for banner(rolling dvd)
 void loadBannerTexture() {
 	// texture setup
 	glActiveTexture(GL_TEXTURE4);
@@ -270,6 +282,7 @@ void loadBannerTexture() {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 }
 
+// load shader for banner(rolling dvd)
 void loadBannerShader() {
 	// initializing default shader
 	GLuint shaders[] = {
@@ -324,6 +337,7 @@ void loadBannerShader() {
 	CHECK_GL_ERROR();
 }
 
+// load texture for banner(blood)
 void loadBloodTexture() {
 	glActiveTexture(GL_TEXTURE4);
 	bloodGeometry->texture = pgr::createTexture(properties->getBloodI());
@@ -335,6 +349,7 @@ void loadBloodTexture() {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
 }
 
+// load shader for banner(blood)
 void loadBloodBannerShader() {
 	// initializing default shader
 	GLuint shaders[] = {
@@ -391,6 +406,7 @@ void loadBloodBannerShader() {
 	CHECK_GL_ERROR();
 }
 
+// load shader for sun9
 void loadSunShader() {
 	// initializing default shader
 	GLuint shaders[] = {
@@ -417,6 +433,7 @@ void loadSunShader() {
 	sunShaderProgram.initialized = true;
 }
 
+// load skybox texture
 void loadSkyboxTexture() {
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxGeometry->texture);
@@ -435,6 +452,7 @@ void loadSkyboxTexture() {
 	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 }
 
+// load skybox shader and object
 void loadSkybox() {
 
 	GLuint skyboxShaders[] = {
@@ -531,6 +549,7 @@ void cleanupShaderPrograms(void) {
 	pgr::deleteProgramAndShaders(sunShaderProgram.program);
 }
 
+// draw skybox
 void drawSkybox() {
 
 
@@ -549,6 +568,7 @@ void drawSkybox() {
 	glUseProgram(0);
 }
 
+// draw banner(rolling dvd)
 void drawBanner() {
 	glDepthFunc(GL_NOTEQUAL);
 	glUseProgram(bannerShaderProgram.program);
@@ -580,6 +600,7 @@ void drawBanner() {
 	glDepthFunc(GL_LESS);
 }
 
+// draw banner(blood)
 void drawBloodBanner() {
 	glDepthFunc(GL_NOTEQUAL);
 	glUseProgram(bloodBannerShaderProgram.program);
@@ -601,6 +622,7 @@ void drawBloodBanner() {
 	glDepthFunc(GL_LESS);
 }
 
+// make camera curve
 void makeCurve() {
 	// every segment has two knots and handlers, but second knot of every segment
 	// is first knot of next segment, so we can store them only once
@@ -675,9 +697,11 @@ glm::vec3 countPositionOnCurve(float t) {
 
 	return resultPos * 10.0f;
 }
+	float dirX = 1.0f;
+	float dirY = 1.0f;
 
 /**
- * \brief Draw all scene objects.
+ * \brief Draw all scene objects, setup common uniforms and operate camera.
  */
 void drawScene(void)
 {
@@ -687,16 +711,17 @@ void drawScene(void)
 
 	CAMERA_SPEED = stateInfo.cameraAcc * delayFrame;
 	const float radius = 10.0f;
+	float sunX = sin(time) * radius;
+	float sunY = cos(time) * radius;
 
 	if (SUN_MOTION_FLAG) {
-		float sunX = sin(time) * radius;
-		float sunY = cos(time) * radius;
-
+		dirX = sunX;
+		dirY = sunY;
 		sunPos.x = sunX;
 		sunPos.y = sunY;
 
-		sun->changePosition(sunPos);
 	}
+	sun->changePosition(sunPos);
 
 	//if (ROTATION_FLAG) {
 	//	float camX = sin(time) * radius;
@@ -709,6 +734,8 @@ void drawScene(void)
 	//	cameraLook = normalize(cameraLook);
 	//	viewMatrix = glm::lookAt(cameraPosGlobal, cameraLook, glm::vec3(0.0, 1.0, 0.0));
 	//}
+
+	// apply camera position and direction
 	if (!stateInfo.freeCamera) {
 		if (stateInfo.staticCam1) {
 			cameraPosGlobal = glm::vec3(2.0, 3.0, 2.0);
@@ -768,8 +795,6 @@ void drawScene(void)
 	glUniform1f(commonShaderProgram.locations.fogHeight, stateInfo.fogHeight);
 	movie->fogHeight = stateInfo.fogHeight;
 	glUniform1f(commonShaderProgram.locations.alphaChannel, 1);
-	float dirX = sin(time) * radius;
-	float dirY = cos(time) * radius;
 	glUniform3f(commonShaderProgram.locations.dirLightVec, -dirX, -dirY, 0.0f);
 	CHECK_GL_ERROR();
 
@@ -787,10 +812,12 @@ void drawScene(void)
 	glUniform1f(commonShaderProgram.locations.linear, 0.1f);
 	glUniform1f(commonShaderProgram.locations.quadratic, 0.005f);
 
+	// draw objects
 	//glUseProgram(0);
 	projectionMatrix = glm::perspective(glm::radians(60.0f), float(glutGet(GLUT_WINDOW_WIDTH)) / float(glutGet(GLUT_WINDOW_HEIGHT)), 0.1f, 100.0f);
 	//TODO testing
 	//((ComplexMesh*)objects[objects.size() - 1])->chPosition(objPos);
+	//movie->chPosition(objPos);
 	//((ComplexMesh*)objects[objects.size() - 1])->chScale(glm::vec3(objSc));
 	for (ObjectInstance* object : objects) {   // for (auto object : objects) {
 		if (object != nullptr)
@@ -850,6 +877,7 @@ void pick(int x, int y) {
 	switch (id) {
 		case 1:
 			stateInfo.carCameraFlag = true;
+			stateInfo.freeCamera = true;
 			//std::cout << "click" << std::endl;
 			break;
 		case 2:
@@ -905,6 +933,9 @@ void reshapeCb(int newWidth, int newHeight) {
  * Called whenever a key on the keyboard was pressed. The key is given by the "keyPressed"
  * parameter, which is an ASCII character. It's often a good idea to have the escape key (ASCII value 27)
  * to call glutLeaveMainLoop() to exit the program.
+ * 
+ * Handles keymap
+ * 
  * \param keyPressed ASCII code of the key
  * \param mouseX mouse (cursor) X position
  * \param mouseY mouse (cursor) Y position
@@ -996,6 +1027,14 @@ void specialKeyboardCb(int specKeyPressed, int mouseX, int mouseY) {
 	}
 }
 
+/**
+ * \brief Handle the non-ASCII key released event (such as arrows or F1).
+ *  The special keyboard callback is triggered when keyboard function (Fx) or directional
+ *  keys are released.
+ * \param specKeyPressed int value of a predefined glut constant such as GLUT_KEY_UP
+ * \param mouseX mouse (cursor) X position
+ * \param mouseY mouse (cursor) Y position
+ */
 void specialKeyboardUpCb(int specKeyReleased, int mouseX, int mouseY) {
 } // key released
 
@@ -1099,7 +1138,7 @@ void passiveMouseMotionCb(int mouseX, int mouseY) {
 // -----------------------  Timer ---------------------------------
 
 /**
- * \brief Callback responsible for the scene update.
+ * \brief Callback responsible for the scene update, updates objects and camera position.
  */
 void timerCb(int)
 {
@@ -1170,10 +1209,12 @@ void timerCb(int)
 	glutPostRedisplay();
 }
 
+// toggle blood on the screen
 void TW_CALL bloodCB(void *p) {
 	stateInfo.blood = !stateInfo.blood;
 }
 
+// reloads properties from .json file
 void TW_CALL reloadPropertiesCB(void *p) {
 	properties->reloadProperties();
 	//reshapeCb(properties->getWinW(), properties->getWinH());
@@ -1185,6 +1226,7 @@ void TW_CALL reloadPropertiesCB(void *p) {
 	handles = properties->getHandlesCatmull();
 }
 
+// switch to static cam 1
 void TW_CALL stCam1(void* p) {
 	stateInfo.staticCam1 = true;
 	stateInfo.staticCam2 = false;
@@ -1193,6 +1235,7 @@ void TW_CALL stCam1(void* p) {
 	//stateInfo.carCameraFlag = false;
 }
 
+// switch to static cam 2
 void TW_CALL stCam2(void* p) {
 	stateInfo.staticCam2 = true;
 	stateInfo.staticCam1 = false;
@@ -1201,6 +1244,7 @@ void TW_CALL stCam2(void* p) {
 	//stateInfo.carCameraFlag = false;
 }
 
+// switch to curve cam 1
 void TW_CALL curveCam(void* p) {
 	stateInfo.cameraCurve = true;
 	stateInfo.staticCam1 = false;
@@ -1209,14 +1253,6 @@ void TW_CALL curveCam(void* p) {
 	stateInfo.freeCamera = true;
 	//stateInfo.carCameraFlag = false;
 }
-
-//TwStructMember Vector3fMembers[] = {
-//	{ "x", TW_TYPE_FLOAT, offsetof(Vector3f, x), "" },
-//	{ "y", TW_TYPE_FLOAT, offsetof(Vector3f, y), "" },
-//	{ "z", TW_TYPE_FLOAT, offsetof(Vector3f, z), "" }
-//};
-//
-//auto TW_TYPE_OGLDEV_VECTOR3F = TwDefineStruct("Vector3f", Vector3fMembers, 3, sizeof(Vector3f), NULL, NULL);
 
 // initiate AntTweaksBar menu and elements inside menu
 void initMenu() {
@@ -1235,12 +1271,12 @@ void initMenu() {
 	TwAddVarRW(menuBar, "FogHeight", TW_TYPE_FLOAT, &stateInfo.fogHeight, " label='Fog Height' step=0.10 min=0.001");
 	TwAddVarRW(menuBar, "CameraAcc", TW_TYPE_FLOAT, &stateInfo.cameraAcc, " label='CameraAcceleration' step=0.10 min=1 max=20");
 	TwAddVarRW(menuBar, "Transp", TW_TYPE_FLOAT, &stateInfo.transparency, " label='Transparency' step=0.1 min=0.001 max=1");
-	TwAddVarRW(menuBar, "Pos1", TW_TYPE_FLOAT, &objPos.x, " label='Position X' step=0.5 min=-1000 max=1000");
-	TwAddVarRW(menuBar, "Pos2", TW_TYPE_FLOAT, &objPos.y, " label='Position Y' step=0.5 min=-1000 max=1000");
-	TwAddVarRW(menuBar, "Pos3", TW_TYPE_FLOAT, &objPos.z, " label='Position Z' step=0.5 min=-1000 max=1000");
+	TwAddVarRW(menuBar, "Pos1", TW_TYPE_FLOAT, &objPos.x, " label='Position X' step=0.1 min=-1000 max=1000");
+	TwAddVarRW(menuBar, "Pos2", TW_TYPE_FLOAT, &objPos.y, " label='Position Y' step=0.1 min=-1000 max=1000");
+	TwAddVarRW(menuBar, "Pos3", TW_TYPE_FLOAT, &objPos.z, " label='Position Z' step=0.1 min=-1000 max=1000");
 	TwAddVarRW(menuBar, "Scale", TW_TYPE_FLOAT, &objSc, " label='Scale' step=0.01 min=-100 max=100");
 	
-	//light toggle
+	//light toggles
 	//TwAddSeparator(menuBar, NULL, " label='Light Toggles' ");
 	TwAddVarRW(menuBar, "Flashlight", TW_TYPE_BOOLCPP, &stateInfo.isFlashlight, " label='Flashlight' group='Light Toggles' ");
 	TwAddVarRW(menuBar, "DirLight", TW_TYPE_BOOLCPP, &stateInfo.isDirLight, " label='Directional Light' group='Light Toggles' ");
@@ -1286,16 +1322,16 @@ void initApplication() {
 	//objects.push_back(new Cube(&commonShaderProgram, glm::vec3(-2.5f, 0.0f, 0.0f)));
 	//objects.push_back(new Cube(&commonShaderProgram, glm::vec3(-2.5f, -2.5f, 0.0f)));
 	//objects.push_back(new Cube(&commonShaderProgram, glm::vec3(0.0f, -2.5f, 0.0f)));
-	objects.push_back(new ComplexMesh(&commonShaderProgram, glm::vec3(0.0f, 6.5f, 0.0f), "data/car.obj"));
-	objects.push_back(new ComplexMesh(&commonShaderProgram, glm::vec3(500.0f, 1.0f, 500.0f), "data/house_textured/house_textured.obj", glm::vec3(0.01f)));
-	objects.push_back(new ComplexMesh(&commonShaderProgram, glm::vec3(50.0f, 1.0f, 94.0f), "data/gasCylinders/GasCylinders.obj", glm::vec3(0.1f)));
-	objects.push_back(new ComplexMesh(&commonShaderProgram, glm::vec3(163.5f, 1.0f, 141.5f), "data/BlastFurnace02/BlastFurnace02.obj", glm::vec3(0.05f)));
+	//objects.push_back(new ComplexMesh(&commonShaderProgram, glm::vec3(0.0f, 6.5f, 0.0f), "data/car.obj"));
+	objects.push_back(new ComplexMesh(&commonShaderProgram, glm::vec3(9.9f, 0.1f, 15.3f), "data/house_textured/house_textured.obj", glm::vec3(0.01f)));
+	objects.push_back(new ComplexMesh(&commonShaderProgram, glm::vec3(10.0f, 0.1f, 20.0f), "data/gasCylinders/GasCylinders.obj", glm::vec3(0.1f)));
+	objects.push_back(new ComplexMesh(&commonShaderProgram, glm::vec3(-5.5f, 1.0f, 15.5f), "data/BlastFurnace02/BlastFurnace02.obj", glm::vec3(0.05f)));
 	objects.push_back(new ComplexMesh(&commonShaderProgram, glm::vec3(-4.5f, 0.001f, 4.0f), "data/old_wooden_church/old_wooden_church.obj", glm::vec3(2.0f)));
-	objects.push_back(new ComplexMesh(&commonShaderProgram, glm::vec3(220.0f, 0.5f, -150.0f), "data/Gas tower without ad/GasTowerWithoutText.obj", glm::vec3(0.1f)));
-	objects.push_back(new ComplexMesh(&commonShaderProgram, glm::vec3(89.0f, -0.5f, 17.5f), "data/GrainStorage02/GrainStorage02.obj", glm::vec3(0.32f)));
+	objects.push_back(new ComplexMesh(&commonShaderProgram, glm::vec3(22.0f, 0.5f, -15.0f), "data/Gas tower without ad/GasTowerWithoutText.obj", glm::vec3(0.1f)));
+	objects.push_back(new ComplexMesh(&commonShaderProgram, glm::vec3(20.0f, -0.5f, -5.5f), "data/GrainStorage02/GrainStorage02.obj", glm::vec3(0.32f)));
 	objects.push_back(new ComplexMesh(&commonShaderProgram, glm::vec3(1.0f, 0.0f, -27.0f), "data/HorusiceTrainStation/HorusiceTrainStation.obj", glm::vec3(1.0f)));
 
-	transparent = new DefaultObject(&commonShaderProgram, glm::vec3(2.0f, 0.0f, 3.0f), "data/transparent.obj", "data/transparentMat.png");
+	transparent = new DefaultObject(&commonShaderProgram, glm::vec3(9.7f, 0.2f, 5.4f), "data/transparent.obj", "data/transparentMat.png");
 	//transparent->textureName = "data/transparentMat.png";
 	std::cout << "Transparent Object rendered" << std::endl;
 	sun = new Sun(&sunShaderProgram, sunPos);

@@ -154,6 +154,11 @@ void Planet::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix
 	if (initialized && (shaderProgram != nullptr)) {
 		glUseProgram(shaderProgram->program);
 
+		glUniform3f(shaderProgram->locations.ambientM, 0.3f, 0.4f, 0.3f);
+		glUniform3f(shaderProgram->locations.diffuseM, 0.8f, 0.9f, 0.8f);
+		glUniform3f(shaderProgram->locations.specularM, 0.4f, 0.5f, 0.4f);
+		glUniform1f(shaderProgram->locations.shininessM, 32.0f);
+
 		//glm::mat4 model = glm::translate(globalModelMatrix, position);
 
 		glUniformMatrix4fv(shaderProgram->locations.PVMmatrix, 1, GL_FALSE, glm::value_ptr(projectionMatrix * viewMatrix * globalModelMatrix));

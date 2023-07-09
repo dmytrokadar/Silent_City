@@ -88,8 +88,13 @@ typedef struct _ObjectGeometry {
 	unsigned int  numTriangles;         ///< number of triangles in the mesh
 	unsigned int  numVertices;         ///< number of vertices in the mesh
 	GLuint        texture;				///< texture id
-	std::vector<float> vertices;
-	std::vector<unsigned int> indexes;
+	std::vector<float> vertices;		///< vertices of the object
+	std::vector<unsigned int> indexes;	///< indexes of the object
+
+	glm::vec3 ambient = glm::vec3(0.2f); ///< ambient of the object
+	glm::vec3 diffuse = glm::vec3(1.0f); ///< diffuse of the object
+	glm::vec3 specular = glm::vec3(0.8f); ///< specular of the object
+	float shininess = 32.0f;              ///< shininess of the object
 
 	// ...
 } ObjectGeometry;
@@ -245,6 +250,42 @@ public:
 		else {
 			//geometry->texture = pgr::createTexture();
 		}
+
+		aiColor4D color;
+
+		//glm::vec3 ambient(0.0f);
+		//glm::vec3 diffuse(0.0f);
+		//glm::vec3 specular(0.0f);
+
+		if (aiGetMaterialColor(material, AI_MATKEY_COLOR_AMBIENT, &color) == AI_SUCCESS)
+		{
+			geometry->ambient.r = color.r;
+			geometry->ambient.g = color.g;
+			geometry->ambient.b = color.b;
+		}
+		if (aiGetMaterialColor(material, AI_MATKEY_COLOR_DIFFUSE, &color) == AI_SUCCESS)
+		{
+			geometry->diffuse.r = color.r;
+			geometry->diffuse.g = color.g;
+			geometry->diffuse.b = color.b;
+		}
+		if (aiGetMaterialColor(material, AI_MATKEY_COLOR_SPECULAR, &color) == AI_SUCCESS)
+		{
+			geometry->specular.r = color.r;
+			geometry->specular.g = color.g;
+			geometry->specular.b = color.b;
+		}
+
+		ai_real shine = 1.0f, strength = 1.0f;
+		uint32_t max;
+		max = 1;
+		if (aiGetMaterialFloatArray(material, AI_MATKEY_SHININESS, &shine, &max) != AI_SUCCESS)
+			shine = 1.0f;
+		max = 1;
+		if (aiGetMaterialFloatArray(material, AI_MATKEY_SHININESS_STRENGTH, &strength, &max) != AI_SUCCESS)
+			strength = 1.0f;
+
+		geometry->shininess = shine * strength;
 	}
 
 	virtual void loadObjFromFileAssimp(std::string path) {

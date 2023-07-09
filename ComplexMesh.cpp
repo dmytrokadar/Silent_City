@@ -10,21 +10,31 @@ void ComplexMesh::update(float elapsedTime, const glm::mat4* parentModelMatrix, 
 	ObjectInstance::update(elapsedTime, parentModelMatrix);
 }
 
+void ComplexMesh::update(glm::vec3 pos, glm::vec3 dir)
+{
+	position = pos;
+	direction = dir;
+
+	for (auto subm : submeshes)
+	{
+		subm->update(pos, dir);
+	}
+}
+
 void ComplexMesh::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix, const glm::vec3 light, const glm::vec3 lightPos, const glm::vec3 cameraPos, const glm::vec3 cameraDirection, const bool isFog)
 {
 	if (initialized && shaderProgram != nullptr) {
 		glUseProgram(shaderProgram->program);
 		glm::mat4 model = glm::scale(globalModelMatrix, scale);
-		model = glm::rotate(model, rotation, glm::vec3(0.0f, 1.0f, 0.0f));
-		model = glm::translate(model, position);
+		model = glm::inverse(glm::lookAt(position, position + direction, glm::vec3(0, 1, 0))) * model;
 		glUniformMatrix4fv(shaderProgram->locations.PVMmatrix, 1, GL_FALSE, glm::value_ptr(projectionMatrix * viewMatrix * model));
 		glUniformMatrix4fv(shaderProgram->locations.model, 1, GL_FALSE, glm::value_ptr(model));
 		glUniform1f(shaderProgram->locations.flashlightAngle, glm::radians(20.0f));
 		glUniform3f(shaderProgram->locations.flashlightColor, light.x, light.y, light.z);
-		glUniform3f(shaderProgram->locations.ambientM, 0.1f, 0.1f, 0.1f);
-		glUniform3f(shaderProgram->locations.diffuseM, 1.0f, 1.0f, 1.0f);
-		glUniform3f(shaderProgram->locations.specularM, 0.5f, 0.5f, 0.5f);
-		glUniform1f(shaderProgram->locations.shininessM, 32.0f);
+		glUniform3fv(shaderProgram->locations.ambientM, 1, glm::value_ptr(geometry->ambient));
+		glUniform3fv(shaderProgram->locations.diffuseM, 1, glm::value_ptr(geometry->diffuse));
+		glUniform3fv(shaderProgram->locations.specularM, 1, glm::value_ptr(geometry->specular));
+		glUniform1f(shaderProgram->locations.shininessM, geometry->shininess);
 
 		glActiveTexture(GL_TEXTURE0);
 		glUniform1i(shaderProgram->locations.sampl, 0);
@@ -53,9 +63,9 @@ void ComplexMesh::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionM
 }
 
 ComplexMesh::ComplexMesh(ShaderProgram* shader, const glm::vec3& pos, const std::string& filename, const glm::vec3 sc, const float rot)
-	: ObjectInstance(shader), position(pos), scale(sc)
+	: ObjectInstance(shader), position(pos), scale(sc), rotation(rot)
 {
-
+	direction = glm::rotate(glm::mat4(1), rot, glm::vec3(0, 1, 0)) * glm::vec4(0, 0, -1, 0);
 	Assimp::Importer importer;
 
 	importer.SetPropertyInteger(AI_CONFIG_PP_PTV_NORMALIZE, 1);
@@ -132,6 +142,8 @@ ComplexMesh::ComplexMesh(ShaderProgram* shader, const glm::vec3& pos, const std:
 ComplexMesh::ComplexMesh(ShaderProgram* shader, const aiMesh* mesh, const aiMaterial* material, const std::string& filename, const glm::vec3& pos, const glm::vec3 sc, const float rot)
 	: ObjectInstance(shader), position(pos), scale(sc), rotation(rot)
 {
+	direction = glm::rotate(glm::mat4(1), rot, glm::vec3(0, 1, 0)) * glm::vec4(0, 0, -1, 0);
+
 	geometry = new ObjectGeometry();
 
 	loadObjFromFileAssimp(mesh, material, filename);
